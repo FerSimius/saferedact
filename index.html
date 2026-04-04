@@ -1505,27 +1505,22 @@ async function initApp() {
   // localStorageから前回のファイル名を取得（フォールバック）
   const lastFileName = localStorage.getItem('lastFileName');
 
+  // ボタンラベル設定
   if (savedHandle) {
     try {
       const perm = await savedHandle.queryPermission({ mode: 'readwrite' });
       btnResume.textContent = `🔄 前回のファイルを再開（${savedHandle.name}）`;
       btnResume.style.display = '';
-      if (perm === 'granted') {
-        await openFileHandle(savedHandle, modal, errEl);
-        return;
-      }
     } catch(e) {
       savedHandle = null;
       await dropHandle().catch(() => {});
     }
   }
-
-  // ハンドルなし・ファイル名あり：「既存ファイルを開く」のラベルをヒント付きに変更
   if (!savedHandle && lastFileName) {
     btnOpen.textContent = `📂 前回のファイルを開く（${lastFileName}）`;
   }
 
-  // モーダルを表示
+  // イベントリスナーを先に全て設定（自動起動より前に必ず設定する）
   btnResume.addEventListener('click', async () => {
     errEl.textContent = '';
     try {
@@ -1565,6 +1560,16 @@ async function initApp() {
       if (e.name !== 'AbortError') errEl.textContent = 'ファイルを作成できませんでした';
     }
   });
+
+  // 権限がすでに granted なら自動起動（イベントリスナー設定後に実行）
+  if (savedHandle) {
+    try {
+      const perm = await savedHandle.queryPermission({ mode: 'readwrite' });
+      if (perm === 'granted') {
+        await openFileHandle(savedHandle, modal, errEl);
+      }
+    } catch(e) {}
+  }
 }
 
 async function openFileHandle(handle, modal, errEl) {
