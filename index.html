@@ -1252,11 +1252,17 @@ document.getElementById('importConfirm').addEventListener('click', async () => {
     const merge = confirm(`${imported.length}件の置換リストデータを読み込みます。\n\n既存データと統合しますか？\n「OK」＝統合（重複は上書き）\n「キャンセル」＝既存データを全て置き換え`);
 
     if (merge) {
-      imported.forEach(item => upsertDict(item.original, item.replacement));
+      // saveDict を都度呼ばず、全件処理後に1回だけ保存
+      const now = new Date().toLocaleDateString('ja-JP', { month:'2-digit', day:'2-digit' });
+      imported.forEach(({ original, replacement }) => {
+        const idx = dict.findIndex(d => d.original === original);
+        if (idx >= 0) { dict[idx].replacement = wrapBrackets(replacement); }
+        else { dict.push({ original, replacement: wrapBrackets(replacement), date: now }); }
+      });
     } else {
       dict = imported;
-      saveDict(dict);
     }
+    await saveDict(dict);
 
     updateDictLabel();
     renderDict();
@@ -1665,8 +1671,11 @@ async function openFileHandle(handle, password, isNew, modal) {
     updateDictLabel();
     renderDict();
   } catch(e) {
-    errEl.textContent = 'ファイルの読み込みに失敗しました';
     await dropHandle().catch(() => {});
+    // Step1 に戻してエラーを表示
+    document.getElementById('filePickerStep2').style.display = 'none';
+    document.getElementById('filePickerStep1').style.display = '';
+    document.getElementById('filePickerErr').textContent = 'ファイルの読み込みに失敗しました。別のファイルを選択してください。';
   }
 }
 
