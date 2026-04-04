@@ -1502,12 +1502,14 @@ async function initApp() {
   let savedHandle = null;
   try { savedHandle = await retrieveHandle(); } catch(e) {}
 
+  // localStorageから前回のファイル名を取得（フォールバック）
+  const lastFileName = localStorage.getItem('lastFileName');
+
   if (savedHandle) {
     try {
       const perm = await savedHandle.queryPermission({ mode: 'readwrite' });
       btnResume.textContent = `🔄 前回のファイルを再開（${savedHandle.name}）`;
       btnResume.style.display = '';
-      // granted なら即座に再開、それ以外はボタンを押してもらう
       if (perm === 'granted') {
         await openFileHandle(savedHandle, modal, errEl);
         return;
@@ -1518,15 +1520,35 @@ async function initApp() {
     }
   }
 
+  // IndexedDBにハンドルがなくてもファイル名があればボタンを表示
+  if (!savedHandle && lastFileName) {
+    btnResume.textContent = `📂 前回のファイルを選択（${lastFileName}）`;
+    btnResume.style.display = '';
+  }
+
   // モーダルを表示
   btnResume.addEventListener('click', async () => {
     errEl.textContent = '';
-    try {
-      const perm = await savedHandle.requestPermission({ mode: 'readwrite' });
-      if (perm !== 'granted') { errEl.textContent = 'ファイルへのアクセスが許可されませんでした'; return; }
-      await openFileHandle(savedHandle, modal, errEl);
-    } catch(e) {
-      errEl.textContent = 'ファイルを開けませんでした。別のファイルを選択してください。';
+    if (savedHandle) {
+      // ハンドルあり：権限を求めてそのまま開く
+      try {
+        const perm = await savedHandle.requestPermission({ mode: 'readwrite' });
+        if (perm !== 'granted') { errEl.textContent = 'ファイルへのアクセスが許可されませんでした'; return; }
+        await openFileHandle(savedHandle, modal, errEl);
+      } catch(e) {
+        errEl.textContent = 'ファイルを開けませんでした。別のファイルを選択してください。';
+      }
+    } else {
+      // ハンドルなし：ファイルピッカーで再選択
+      try {
+        const [handle] = await window.showOpenFilePicker({
+          types: [{ description: 'JSON', accept: { 'application/json': ['.json'] } }],
+          multiple: false
+        });
+        await openFileHandle(handle, modal, errEl);
+      } catch(e) {
+        if (e.name !== 'AbortError') errEl.textContent = 'ファイルを開けませんでした';
+      }
     }
   });
 
@@ -1566,7 +1588,10 @@ async function openFileHandle(handle, modal, errEl) {
     const text = await file.text();
     dict = JSON.parse(text) || [];
     dictFileHandle = handle;
-    await persistHandle(handle);
+    // ハンドルをIndexedDBに保存（失敗しても続行）
+    try { await persistHandle(handle); } catch(e) {}
+    // ファイル名をlocalStorageにも保存（フォールバック用）
+    localStorage.setItem('lastFileName', handle.name);
     setFileNameLabel(handle.name);
     modal.classList.remove('show');
     updateDictLabel();
