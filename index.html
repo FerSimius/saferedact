@@ -1520,35 +1520,20 @@ async function initApp() {
     }
   }
 
-  // IndexedDBにハンドルがなくてもファイル名があればボタンを表示
+  // ハンドルなし・ファイル名あり：「既存ファイルを開く」のラベルをヒント付きに変更
   if (!savedHandle && lastFileName) {
-    btnResume.textContent = `📂 前回のファイルを選択（${lastFileName}）`;
-    btnResume.style.display = '';
+    btnOpen.textContent = `📂 前回のファイルを開く（${lastFileName}）`;
   }
 
   // モーダルを表示
   btnResume.addEventListener('click', async () => {
     errEl.textContent = '';
-    if (savedHandle) {
-      // ハンドルあり：権限を求めてそのまま開く
-      try {
-        const perm = await savedHandle.requestPermission({ mode: 'readwrite' });
-        if (perm !== 'granted') { errEl.textContent = 'ファイルへのアクセスが許可されませんでした'; return; }
-        await openFileHandle(savedHandle, modal, errEl);
-      } catch(e) {
-        errEl.textContent = 'ファイルを開けませんでした。別のファイルを選択してください。';
-      }
-    } else {
-      // ハンドルなし：ファイルピッカーで再選択
-      try {
-        const [handle] = await window.showOpenFilePicker({
-          types: [{ description: 'JSON', accept: { 'application/json': ['.json'] } }],
-          multiple: false
-        });
-        await openFileHandle(handle, modal, errEl);
-      } catch(e) {
-        if (e.name !== 'AbortError') errEl.textContent = 'ファイルを開けませんでした';
-      }
+    try {
+      const perm = await savedHandle.requestPermission({ mode: 'readwrite' });
+      if (perm !== 'granted') { errEl.textContent = 'ファイルへのアクセスが許可されませんでした'; return; }
+      await openFileHandle(savedHandle, modal, errEl);
+    } catch(e) {
+      errEl.textContent = 'ファイルを開けませんでした。別のファイルを選択してください。';
     }
   });
 
