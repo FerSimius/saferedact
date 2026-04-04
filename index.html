@@ -2,10 +2,1627 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="refresh" content="0; url=masking-tool-v2.24.html">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SafeRedact</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230f1117'/%3E%3Crect x='3' y='8' width='16' height='3' rx='1.5' fill='%234a5a78'/%3E%3Crect x='3' y='14' width='18' height='3' rx='1.5' fill='%234a5a78'/%3E%3Crect x='3' y='20' width='11' height='3' rx='1.5' fill='%234a5a78'/%3E%3Crect x='3' y='8' width='10' height='3' rx='1.5' fill='%234f9cf9'/%3E%3Crect x='3' y='14' width='13' height='3' rx='1.5' fill='%234f9cf9'/%3E%3Crect x='18' y='3' width='6' height='16' rx='3' transform='rotate(35 18 3)' fill='%23f0a742'/%3E%3Cpolygon points='27,22 30,29 23,26' fill='%23c8832a'/%3E%3C/svg%3E">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=JetBrains+Mono:wght@400;600&display=swap');
+
+  :root {
+    --bg: #0f1117;
+    --bg2: #161b25;
+    --bg3: #1e2535;
+    --border: #2a3347;
+    --accent: #4f9cf9;
+    --accent2: #7c6af7;
+    --success: #34c98a;
+    --warn: #f0a742;
+    --danger: #f05c5c;
+    --restore: #c084fc;
+    --text: #e2e8f0;
+    --text2: #8899bb;
+    --text3: #4a5a78;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    height: 100%;
+    overflow: hidden;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 14px;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  header {
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  header h1 { font-size: 15px; font-weight: 700; letter-spacing: 0.05em; }
+
+  .badge {
+    font-size: 10px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    color: var(--text2);
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .badge.green { border-color: var(--success); color: var(--success); }
+
+  .tabs {
+    display: flex;
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    padding: 0 24px;
+    gap: 4px;
+  }
+
+  .tab {
+    padding: 10px 20px;
+    cursor: pointer;
+    color: var(--text2);
+    font-size: 13px;
+    font-weight: 500;
+    border-bottom: 2px solid transparent;
+    transition: all 0.15s;
+    user-select: none;
+  }
+
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  .tab-content { display: none; flex: 1; min-height: 0; }
+  .tab-content.active { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow: hidden; }
+
+  /* ======= ワークスペース ======= */
+  .workspace-layout {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .workspace-section {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+  }
+
+  .workspace-section:first-child {
+    border-bottom: 1px solid var(--border);
+  }
+
+  .workspace-section:first-child .panels-row {
+    padding-bottom: 6px;
+  }
+
+  .action-bar {
+    display: flex;
+    gap: 8px;
+    padding: 8px 12px;
+    flex-shrink: 0;
+    align-items: flex-start;
+  }
+
+  .action-bar > .action-section {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .workspace-section:first-child .action-bar > .action-section:first-child {
+    flex: 5;
+  }
+
+  .workspace-section:last-child .action-bar > .action-section:nth-child(1) { flex: 5; }
+
+  .register-row {
+    display: flex;
+    align-items: stretch;
+    gap: 6px;
+  }
+  .register-row h3 { white-space: nowrap; margin-bottom: 0; }
+  .register-row .selection-preview { flex: 1; margin-bottom: 0; }
+  .register-row input[type="text"] { flex: 1; margin-bottom: 0; }
+  .register-row .btn { width: auto; flex-shrink: 0; }
+
+  .panels-row {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+  }
+
+  .panel {
+    display: flex;
+    flex-direction: column;
+    padding: 8px 20px 20px;
+    min-height: 0;
+    flex: 1;
+    box-sizing: border-box;
+  }
+
+  .panel-title {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: var(--text3);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .panel-title .count {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    color: var(--text2);
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 10px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  textarea {
+    flex: 1;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 13px;
+    line-height: 1.8;
+    padding: 14px;
+    resize: none;
+    outline: none;
+    transition: border-color 0.15s;
+    min-height: 0;
+  }
+
+  textarea:focus { border-color: var(--accent); }
+
+  .action-section {
+    padding: 7px 10px;
+  }
+
+  .action-section h3 {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text2);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+
+  input[type="text"], input[type="password"] {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 13px;
+    padding: 8px 10px;
+    outline: none;
+    transition: border-color 0.15s;
+    margin-bottom: 8px;
+  }
+
+  input[type="text"]:focus, input[type="password"]:focus { border-color: var(--accent); }
+  input::placeholder { color: var(--text3); }
+
+  .arrow-indicator { text-align: center; color: var(--text3); font-size: 18px; margin: 4px 0; }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.15s;
+    width: 100%;
+  }
+
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { filter: brightness(1.15); }
+
+  .btn-success { background: var(--success); color: #0f1117; font-weight: 700; }
+  .btn-success:hover { filter: brightness(1.1); }
+
+  .btn-restore { background: var(--restore); color: #0f1117; font-weight: 700; }
+  .btn-restore:hover { filter: brightness(1.1); }
+
+  .btn-secondary { background: var(--bg); border: 1px solid var(--border); color: var(--text2); }
+  .btn-secondary:hover { border-color: var(--text2); color: var(--text); }
+
+  .btn-warn-outline { background: transparent; border: 1px solid var(--warn); color: var(--warn); }
+  .btn-warn-outline:hover { background: var(--warn); color: #0f1117; }
+
+  .btn-danger-outline { background: transparent; border: 1px solid var(--danger); color: var(--danger); }
+  .btn-danger-outline:hover { background: var(--danger); color: #fff; }
+
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; filter: none !important; }
+
+  .selection-preview {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 10px;
+    font-size: 13px;
+    color: var(--text2);
+    margin-bottom: 6px;
+    font-family: 'JetBrains Mono', monospace;
+    word-break: break-all;
+  }
+
+
+  .selected-text { color: var(--warn); font-weight: 600; }
+
+  .status-msg {
+    font-size: 11px;
+    color: var(--text2);
+    text-align: center;
+    padding: 2px 0;
+    min-height: 0;
+  }
+
+  .status-msg.ok { color: var(--success); }
+  .status-msg.err { color: var(--danger); }
+
+  /* 復元パネル */
+  .restore-panel {
+    border-color: rgba(192, 132, 252, 0.3) !important;
+  }
+
+  .restore-panel h3 { color: var(--restore) !important; }
+
+  /* ======= 辞書画面 ======= */
+  .dict-layout {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    padding: 24px;
+    gap: 16px;
+  }
+
+  .dict-add-form {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 20px;
+    display: flex;
+    gap: 12px;
+    align-items: flex-end;
+  }
+
+  .form-group { display: flex; flex-direction: column; gap: 6px; flex: 1; }
+
+  .form-group label { font-size: 11px; color: var(--text2); font-weight: 500; letter-spacing: 0.05em; }
+  .form-group input { margin-bottom: 0; }
+
+  /* バックアップバー */
+  .backup-bar {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .backup-bar .label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text2);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    flex: 1;
+    min-width: 120px;
+  }
+
+  .backup-bar .btn { width: auto; padding: 7px 16px; }
+
+  .dict-table-wrap {
+    flex: 1;
+    overflow-y: auto;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+  }
+
+  table { width: 100%; border-collapse: collapse; }
+
+  thead th {
+    background: var(--bg3);
+    padding: 10px 16px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+  }
+
+  tbody tr { border-bottom: 1px solid var(--border); transition: background 0.1s; }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: var(--bg3); }
+
+  tbody td { padding: 10px 16px; font-size: 13px; vertical-align: middle; }
+
+  .original-cell { font-family: 'JetBrains Mono', monospace; color: var(--warn); font-size: 12px; }
+  .replace-cell { font-family: 'JetBrains Mono', monospace; color: var(--success); font-size: 12px; }
+  .action-cell { text-align: right; }
+
+  .editable-cell {
+    cursor: pointer;
+    border-bottom: 1px dashed transparent;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .editable-cell:hover {
+    border-bottom-color: var(--text3);
+    background: rgba(79,156,249,0.06);
+  }
+
+  .icon-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text3);
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 16px;
+    transition: all 0.15s;
+  }
+  .icon-btn:hover { color: var(--danger); background: rgba(240,92,92,0.1); }
+
+  .empty-state { text-align: center; padding: 48px; color: var(--text3); font-size: 13px; }
+  .empty-state .icon { font-size: 32px; margin-bottom: 8px; }
+
+  .search-bar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 8px;
+  }
+
+  .search-bar input { flex: 1; margin-bottom: 0; }
+
+  .output-actions { display: flex; gap: 8px; margin-top: 10px; }
+  .output-actions .btn { width: auto; flex: 1; }
+
+  /* ======= モーダル ======= */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .modal-overlay.show { display: flex; }
+
+  .modal {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 28px;
+    width: 380px;
+    max-width: 90vw;
+  }
+
+  .modal h2 { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+  .modal p { font-size: 12px; color: var(--text2); margin-bottom: 16px; line-height: 1.6; }
+
+  .modal label { font-size: 12px; color: var(--text2); display: block; margin-bottom: 6px; }
+  .modal input { margin-bottom: 16px; }
+
+  .modal-actions { display: flex; gap: 10px; }
+  .modal-actions .btn { flex: 1; }
+
+  .modal-err { font-size: 12px; color: var(--danger); min-height: 18px; margin-bottom: 8px; }
+
+  /* トースト */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 18px;
+    font-size: 13px;
+    color: var(--text);
+    opacity: 0;
+    transform: translateY(8px);
+    transition: all 0.2s;
+    pointer-events: none;
+    z-index: 100;
+    max-width: 300px;
+  }
+
+  .toast.show { opacity: 1; transform: translateY(0); }
+  .toast.success { border-color: var(--success); color: var(--success); }
+  .toast.error { border-color: var(--danger); color: var(--danger); }
+  .toast.restore { border-color: var(--restore); color: var(--restore); }
+
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text3); }
+
+  textarea::-webkit-scrollbar { width: 12px; cursor: default; }
+  textarea::-webkit-scrollbar-track { background: var(--bg3); border-radius: 4px; cursor: default; }
+  textarea::-webkit-scrollbar-thumb { background: var(--text3); border-radius: 4px; border: 2px solid var(--bg3); cursor: default; }
+  textarea::-webkit-scrollbar-thumb:hover { background: var(--text2); cursor: default; }
+
+  ::selection { background: rgba(79,156,249,0.3); }
+
+  .dict-meta { display: flex; align-items: center; justify-content: space-between; }
+  .dict-count { font-size: 12px; color: var(--text2); display: flex; align-items: center; gap: 8px; }
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--success); display: inline-block; }
+</style>
 </head>
 <body>
-<p><a href="masking-tool-v2.24.html">SafeRedact</a></p>
+
+<header>
+  <h1><svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align:-4px; margin-right:6px;">
+    <rect x="1" y="4" width="12" height="2.2" rx="1" fill="#4a5a78"/>
+    <rect x="1" y="8" width="14" height="2.2" rx="1" fill="#4a5a78"/>
+    <rect x="1" y="12" width="9" height="2.2" rx="1" fill="#4a5a78"/>
+    <rect x="1" y="4" width="8" height="2.2" rx="1" fill="#4f9cf9" opacity="0.85"/>
+    <rect x="1" y="8" width="11" height="2.2" rx="1" fill="#4f9cf9" opacity="0.85"/>
+    <rect x="12" y="1" width="5" height="13" rx="2" transform="rotate(35 12 1)" fill="#f0a742"/>
+    <polygon points="19,16 21,21 16,18" fill="#c8832a"/>
+  </svg>SafeRedact</h1>
+  <span class="badge">OFFLINE</span>
+  <span class="badge green" id="dictSizeLabel">置換リスト: 0件</span>
+  <span class="badge" id="autoSaveLabel">自動保存: 待機中</span>
+  <span class="badge" id="fileNameLabel" style="display:none; max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"></span>
+</header>
+
+<div class="tabs">
+  <div class="tab active" data-tab="workspace">ワークスペース</div>
+  <div class="tab" data-tab="dict">置換リスト</div>
+</div>
+
+<!-- ===== ワークスペース ===== -->
+<div class="tab-content active" id="tab-workspace">
+  <div class="workspace-layout">
+
+    <!-- 上段：マスキング実行 -->
+    <div class="workspace-section">
+      <div class="action-bar">
+        <div class="action-section">
+          <div class="register-row">
+            <h3>🖱 選択して置換登録</h3>
+            <div class="selection-preview" id="selectionPreview">
+              <span style="color:var(--text3)">テキストを選択してください</span>
+            </div>
+            <input type="text" id="replaceWith" placeholder="置換後の表現（例: [利用者S]）">
+            <button class="btn btn-primary" id="btnRegisterAndApply" disabled>登録して置換</button>
+          </div>
+          <div class="status-msg" id="registerMsg"></div>
+        </div>
+        <div class="action-section">
+          <button class="btn btn-success" id="btnRunAll">▶ 置換リスト全適用</button>
+          <div class="status-msg" id="runMsg"></div>
+        </div>
+        <div class="action-section">
+          <button class="btn btn-secondary" id="btnClearOutput">全クリア</button>
+        </div>
+      </div>
+      <div class="panels-row">
+        <div class="panel">
+          <div class="panel-title">① 入力テキスト</div>
+          <textarea id="inputText" placeholder="テキストをここに貼り付けてください。テキストを選択すると、上のアクションバーで置換語を設定できます。"></textarea>
+          <div class="search-bar">
+            <input type="text" id="searchBox" placeholder="🔍 検索ワードを入力…" autocomplete="off" style="margin-bottom:0; flex:1;">
+            <button class="icon-btn" id="btnSearch" title="検索" style="color:var(--accent); font-size:12px; padding:4px 10px;">検索</button>
+            <button class="icon-btn" id="btnSearchClear" title="クリア" style="color:var(--text3); font-size:12px; padding:4px 10px;">クリア</button>
+            <span id="searchHitLabel" style="font-size:11px; color:var(--text2); white-space:nowrap; font-family:'JetBrains Mono',monospace;"></span>
+            <button class="icon-btn" id="btnSearchPrev" title="前へ" style="color:var(--text2);">▲</button>
+            <button class="icon-btn" id="btnSearchNext" title="次へ" style="color:var(--text2);">▼</button>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-title">② マスキング済みテキスト <span class="count" id="replaceCount">0件置換</span></div>
+          <textarea id="outputText" placeholder="マスキング後のテキストがここに表示されます。&#10;AI等に渡して整えた後、下段の復元エリアに送ってください。" style="cursor:text;" onkeydown="if(!((event.ctrlKey||event.metaKey)&&event.key==='c')) return false;" ondragstart="return false;"></textarea>
+          <div class="output-actions">
+            <button class="btn btn-secondary" id="btnCopy">📋 コピー</button>
+            <button class="btn btn-secondary" id="btnSendToInput">← 入力に戻す</button>
+            <button class="btn btn-primary" id="btnSendToRestore">↓ 復元へ</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 下段：テキスト復元 -->
+    <div class="workspace-section">
+      <div class="action-bar">
+        <div class="action-section restore-panel">
+          <div class="register-row">
+            <h3>🔁 テキスト復元</h3>
+            <div style="flex:1; min-width:0; font-size:11px; color:var(--text2); line-height:1.5;">
+              AIが置換語を変形させた場合はマッチしません。手動で修正してください。
+            </div>
+          </div>
+        </div>
+        <div class="action-section">
+          <button class="btn btn-restore" id="btnRestore">🔁 復元実行</button>
+          <div class="status-msg" id="restoreMsg"></div>
+        </div>
+        <div class="action-section">
+          <button class="btn btn-secondary" id="btnClearRestoreOutput">全クリア</button>
+        </div>
+      </div>
+      <div class="panels-row">
+        <div class="panel">
+          <div class="panel-title">③ AI整形後テキスト（マスキング済み）</div>
+          <textarea id="restoreInput" placeholder="AIが整形したテキストをここに貼り付けてください。&#10;[利用者S] などの置換語が含まれたままでOKです。"></textarea>
+        </div>
+        <div class="panel">
+          <div class="panel-title">④ 復元済みテキスト <span class="count" id="restoreCount">0件復元</span></div>
+          <textarea id="restoreOutput" placeholder="復元後のテキストがここに表示されます。" style="cursor:text;" onkeydown="if(!((event.ctrlKey||event.metaKey)&&event.key==='c')) return false;" ondragstart="return false;"></textarea>
+          <div class="output-actions">
+            <button class="btn btn-secondary" id="btnRestoreCopy">📋 コピー</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ===== 置換リスト画面 ===== -->
+<div class="tab-content" id="tab-dict">
+  <div class="dict-layout">
+
+    <!-- バックアップバー -->
+    <div class="backup-bar">
+      <div class="label">💾 バックアップ（暗号化）</div>
+      <button class="btn btn-warn-outline" id="btnExport">↓ エクスポート</button>
+      <button class="btn btn-secondary" id="btnImportTrigger">↑ インポート</button>
+      <input type="file" id="importFile" accept=".json" style="display:none">
+      <div style="font-size:11px; color:var(--text3); flex-basis:100%;">
+        エクスポートしたファイルをGoogle Driveなど任意の場所に保管してください。別PCでの復元やバックアップに使えます。
+      </div>
+    </div>
+
+    <!-- 追加フォーム -->
+    <div class="dict-add-form">
+      <div class="form-group">
+        <label>元の語句（マスキング前）</label>
+        <input type="text" id="dictOriginal" placeholder="例: 佐藤さん">
+      </div>
+      <div style="padding-bottom:2px; color:var(--text3); font-size:18px;">→</div>
+      <div class="form-group">
+        <label>置換後の表現</label>
+        <input type="text" id="dictReplacement" placeholder="例: [利用者S]">
+      </div>
+      <button class="btn btn-primary" id="btnAddDict" style="width:100px; margin-bottom:0;">追加</button>
+    </div>
+
+    <div class="dict-meta">
+      <div class="dict-count">
+        <span class="dot"></span>
+        <span id="dictCount">0件登録済み</span>
+      </div>
+      <button class="btn btn-danger-outline" id="btnClearAll" style="width:auto; padding:6px 14px; font-size:12px;">全削除</button>
+    </div>
+
+    <div class="dict-table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:34%">元の語句</th>
+            <th style="width:34%">置換後</th>
+            <th style="width:12%">登録日</th>
+            <th style="width:20%"></th>
+          </tr>
+        </thead>
+        <tbody id="dictTableBody"></tbody>
+      </table>
+    </div>
+
+  </div>
+</div>
+
+<!-- ===== パスワードモーダル（エクスポート） ===== -->
+<div class="modal-overlay" id="exportModal">
+  <div class="modal">
+    <h2>🔐 暗号化して保存</h2>
+    <p>置換リストをAES-256で暗号化してエクスポートします。<br>このパスワードを忘れると復号できません。メモしておいてください。</p>
+    <label>パスワード</label>
+    <input type="password" id="exportPass1" placeholder="パスワードを入力">
+    <label>パスワード（確認）</label>
+    <input type="password" id="exportPass2" placeholder="もう一度入力">
+    <div class="modal-err" id="exportErr"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" id="exportCancel">キャンセル</button>
+      <button class="btn btn-warn-outline" id="exportConfirm">エクスポート</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== パスワードモーダル（インポート） ===== -->
+<div class="modal-overlay" id="importModal">
+  <div class="modal">
+    <h2>🔓 復号して読み込み</h2>
+    <p>暗号化された置換リストファイルを読み込みます。<br>エクスポート時に設定したパスワードを入力してください。</p>
+    <label>パスワード</label>
+    <input type="password" id="importPass" placeholder="パスワードを入力">
+    <div class="modal-err" id="importErr"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" id="importCancel">キャンセル</button>
+      <button class="btn btn-primary" id="importConfirm">読み込む</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== ファイル選択モーダル（起動時） ===== -->
+<div class="modal-overlay show" id="filePickerModal">
+  <div class="modal">
+    <h2>📂 置換リストファイルの選択</h2>
+    <p>置換リストを保存するJSONファイルを選択するか、新規作成してください。</p>
+    <div class="modal-actions" style="flex-direction:column; gap:10px; margin-top:8px;">
+      <button class="btn btn-primary" id="btnResumeFile" style="display:none; width:100%;"></button>
+      <button class="btn btn-secondary" id="btnOpenFile" style="width:100%;">📂 既存ファイルを開く</button>
+      <button class="btn btn-secondary" id="btnNewFile" style="width:100%;">✨ 新規作成</button>
+    </div>
+    <div class="modal-err" id="filePickerErr" style="margin-top:8px;"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ============================================================
+// ストレージ (File System Access API + IndexedDB)
+// ============================================================
+
+const DB_NAME  = 'saferedact_db';
+const DB_STORE = 'handles';
+
+function openDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, 1);
+    req.onupgradeneeded = e => e.target.result.createObjectStore(DB_STORE);
+    req.onsuccess = e => resolve(e.target.result);
+    req.onerror   = e => reject(e.target.error);
+  });
+}
+
+async function persistHandle(handle) {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(DB_STORE, 'readwrite');
+    tx.objectStore(DB_STORE).put(handle, 'dictFile');
+    tx.oncomplete = resolve;
+    tx.onerror    = e => reject(e.target.error);
+  });
+}
+
+async function retrieveHandle() {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx  = db.transaction(DB_STORE, 'readonly');
+    const req = tx.objectStore(DB_STORE).get('dictFile');
+    req.onsuccess = e => resolve(e.target.result || null);
+    req.onerror   = e => reject(e.target.error);
+  });
+}
+
+async function dropHandle() {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(DB_STORE, 'readwrite');
+    tx.objectStore(DB_STORE).delete('dictFile');
+    tx.oncomplete = resolve;
+    tx.onerror    = e => reject(e.target.error);
+  });
+}
+
+let dict           = [];
+let dictFileHandle = null;
+let importFileData = null; // インポート待ちのファイルデータ
+
+async function saveDict(d) {
+  dict = d;
+  if (!dictFileHandle) return;
+  try {
+    const writable = await dictFileHandle.createWritable();
+    await writable.write(JSON.stringify(d, null, 2));
+    await writable.close();
+    flashAutoSave();
+  } catch(e) {
+    showToast('ファイルへの書き込みに失敗しました', 'error');
+  }
+}
+
+function setFileNameLabel(name) {
+  const el = document.getElementById('fileNameLabel');
+  if (!el) return;
+  if (name) {
+    el.textContent = '📄 ' + name;
+    el.style.display = '';
+  } else {
+    el.style.display = 'none';
+  }
+}
+
+// ============================================================
+// タブ
+// ============================================================
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    const target = tab.dataset.tab;
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('tab-' + target).classList.add('active');
+    if (target === 'dict') renderDict();
+  });
+});
+
+// ============================================================
+// 選択検知（マスキング）
+// ============================================================
+let selectedText = '';
+
+document.getElementById('inputText').addEventListener('mouseup', handleSelection);
+document.getElementById('inputText').addEventListener('keyup', handleSelection);
+
+function handleSelection() {
+  const ta = document.getElementById('inputText');
+  selectedText = ta.value.substring(ta.selectionStart, ta.selectionEnd).trim();
+  const preview = document.getElementById('selectionPreview');
+  const btn = document.getElementById('btnRegisterAndApply');
+
+  if (selectedText) {
+    preview.innerHTML = '<span class="selected-text">' + esc(selectedText) + '</span>';
+    btn.disabled = false;
+    const existing = dict.find(d => d.original === selectedText);
+    if (existing) {
+      document.getElementById('replaceWith').value = existing.replacement;
+      setMsg('registerMsg', '置換リストに登録済みです', '');
+    } else {
+      document.getElementById('replaceWith').value = '';
+      setMsg('registerMsg', '', '');
+    }
+  } else {
+    preview.innerHTML = '<span style="color:var(--text3)">テキストを選択してください</span>';
+    btn.disabled = true;
+  }
+}
+
+// ============================================================
+// 登録して置換
+// ============================================================
+function wrapBrackets(s) {
+  // すでに [] で囲まれていればそのまま、なければ付ける
+  return (s.startsWith('[') && s.endsWith(']')) ? s : '[' + s + ']';
+}
+
+function doRegisterAndApply() {
+  const raw = document.getElementById('replaceWith').value.trim();
+  if (!selectedText) return;
+  if (!raw) { setMsg('registerMsg', '置換後の表現を入力してください', 'err'); return; }
+
+  const replacement = wrapBrackets(raw);
+
+  // 置換後語句の重複チェック（同じ元語への上書きは除外）
+  const existingIdx = dict.findIndex(d => d.original === selectedText);
+  const repConflict = dict.findIndex((d, i) => d.replacement === replacement && i !== existingIdx);
+  if (repConflict >= 0) {
+    alert(`「${replacement}」はすでに「${dict[repConflict].original}」の置換後として登録されています。\n別の表現を入力してください。`);
+    return;
+  }
+
+  const ok = upsertDict(selectedText, replacement);
+  if (!ok) return;
+
+  // 入力テキストをベースに置換して出力ウィンドウへ
+  const inputVal = document.getElementById('inputText').value;
+  const output = document.getElementById('outputText');
+  const base = output.value || inputVal; // 出力に既に内容があればそちらに重ねる
+  const replaced = base.split(selectedText).join(replacement);
+  output.value = replaced;
+
+  // 置換件数を更新
+  const count = base.split(selectedText).length - 1;
+  const cur = parseInt(document.getElementById('replaceCount').textContent) || 0;
+  document.getElementById('replaceCount').textContent = (cur + count) + '件置換';
+
+  setMsg('registerMsg', `✓ 「${selectedText}」→「${replacement}」登録・置換完了`, 'ok');
+  document.getElementById('replaceWith').value = '';
+  selectedText = '';
+  document.getElementById('btnRegisterAndApply').disabled = true;
+  document.getElementById('selectionPreview').innerHTML = '<span style="color:var(--text3)">テキストを選択してください</span>';
+  showToast('登録・置換完了', 'success');
+}
+
+document.getElementById('btnRegisterAndApply').addEventListener('click', doRegisterAndApply);
+
+// Enter キーで登録
+document.getElementById('replaceWith').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.isComposing) doRegisterAndApply();
+});
+
+function upsertDict(original, replacement, overwriteIndex = -1) {
+  const now = new Date().toLocaleDateString('ja-JP', { month:'2-digit', day:'2-digit' });
+  if (overwriteIndex >= 0) {
+    // 編集保存：自分以外に同じ元語があれば拒否
+    const conflict = dict.findIndex((d, i) => d.original === original && i !== overwriteIndex);
+    if (conflict >= 0) {
+      showToast(`「${original}」は他の行に登録済みです`, 'error');
+      return false;
+    }
+    dict[overwriteIndex].original    = original;
+    dict[overwriteIndex].replacement = replacement;
+  } else {
+    // 新規追加 or 上書き更新
+    const idx = dict.findIndex(d => d.original === original);
+    if (idx >= 0) {
+      dict[idx].replacement = replacement; // 上書き更新
+    } else {
+      dict.push({ original, replacement, date: now });
+    }
+  }
+  saveDict(dict);
+  updateDictLabel();
+  return true;
+}
+
+// ============================================================
+// 一括実行
+// ============================================================
+document.getElementById('btnRunAll').addEventListener('click', () => {
+  if (dict.length === 0) { setMsg('runMsg', '置換リストが空です', 'err'); return; }
+  const input = document.getElementById('inputText').value;
+  if (!input.trim()) { setMsg('runMsg', '入力テキストが空です', 'err'); return; }
+
+  let result = input;
+  let count = 0;
+  dict.forEach(({ original, replacement }) => {
+    if (result.includes(original)) {
+      count += result.split(original).length - 1;
+      result = result.split(original).join(replacement);
+    }
+  });
+
+  document.getElementById('outputText').value = result;
+  document.getElementById('replaceCount').textContent = count + '件置換';
+  setMsg('runMsg', `✓ ${count}件の語句を置換しました`, 'ok');
+  showToast(`${count}件置換完了`, 'success');
+});
+
+// ============================================================
+// 復元（逆引き）
+// ============================================================
+document.getElementById('btnRestore').addEventListener('click', () => {
+  if (dict.length === 0) { setMsg('restoreMsg', '置換リストが空です', 'err'); return; }
+  const input = document.getElementById('restoreInput').value;
+  if (!input.trim()) { setMsg('restoreMsg', 'テキストが空です', 'err'); return; }
+
+  let result = input;
+  let count = 0;
+  dict.forEach(({ original, replacement }) => {
+    if (result.includes(replacement)) {
+      count += result.split(replacement).length - 1;
+      result = result.split(replacement).join(original);
+    }
+  });
+
+  document.getElementById('restoreOutput').value = result;
+  document.getElementById('restoreCount').textContent = count + '件復元';
+  setMsg('restoreMsg', `✓ ${count}件の語句を復元しました`, 'ok');
+  showToast(`${count}件復元完了`, 'restore');
+});
+
+// ============================================================
+// コピー・その他ボタン
+// ============================================================
+document.getElementById('btnCopy').addEventListener('click', () => {
+  copyText(document.getElementById('outputText').value, 'コピーしました');
+});
+
+document.getElementById('btnRestoreCopy').addEventListener('click', () => {
+  copyText(document.getElementById('restoreOutput').value, 'コピーしました');
+});
+
+document.getElementById('btnSendToInput').addEventListener('click', () => {
+  const v = document.getElementById('outputText').value;
+  if (!v) return;
+  document.getElementById('inputText').value = v;
+  showToast('入力欄に移動しました', 'success');
+});
+
+document.getElementById('btnSendToRestore').addEventListener('click', () => {
+  const v = document.getElementById('outputText').value;
+  if (!v) return;
+  document.getElementById('restoreInput').value = v;
+  document.getElementById('restoreInput').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  showToast('復元エリアに送りました', 'success');
+});
+
+document.getElementById('btnClearOutput').addEventListener('click', () => {
+  document.getElementById('inputText').value = '';
+  document.getElementById('outputText').value = '';
+  document.getElementById('replaceCount').textContent = '0件置換';
+  setMsg('runMsg', '', '');
+});
+
+document.getElementById('btnClearRestoreOutput').addEventListener('click', () => {
+  document.getElementById('restoreInput').value = '';
+  document.getElementById('restoreOutput').value = '';
+  document.getElementById('restoreCount').textContent = '0件復元';
+  setMsg('restoreMsg', '', '');
+});
+
+function copyText(text, msg) {
+  if (!text) return;
+  if (navigator.clipboard && location.protocol !== 'file:') {
+    navigator.clipboard.writeText(text).then(() => showToast(msg, 'success'));
+  } else {
+    // file:// プロトコル対応フォールバック
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0;';
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    try {
+      document.execCommand('copy');
+      showToast(msg, 'success');
+    } catch {
+      showToast('コピーに失敗しました', 'error');
+    }
+    document.body.removeChild(ta);
+  }
+}
+
+// ============================================================
+// 辞書レンダリング
+// ============================================================
+function renderDict() {
+  const tbody = document.getElementById('dictTableBody');
+  if (dict.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><div class="icon">📖</div>置換リストが空です。語句を登録してください。</div></td></tr>`;
+  } else {
+    // 置換後語句で昇順ソート（英数→記号→日本語の順）
+    const sorted = dict
+      .map((item, i) => ({ ...item, _origIdx: i }))
+      .sort((a, b) => a.replacement.localeCompare(b.replacement, 'ja', { sensitivity: 'base' }));
+
+    tbody.innerHTML = sorted.map(item => `
+      <tr id="dictrow-${item._origIdx}" class="dict-row">
+        <td class="original-cell editable-cell" onclick="editItem(${item._origIdx})" title="クリックして編集">${esc(item.original)}</td>
+        <td class="replace-cell editable-cell" onclick="editItem(${item._origIdx})" title="クリックして編集">${esc(item.replacement)}</td>
+        <td style="color:var(--text3); font-size:11px;">${item.date || '-'}</td>
+        <td class="action-cell">
+          <button class="icon-btn" onclick="removeItem(${item._origIdx})" title="削除">✕</button>
+        </td>
+      </tr>`).join('');
+  }
+  document.getElementById('dictCount').textContent = dict.length + '件登録済み';
+}
+
+window.editItem = function(i) {
+  const item = dict[i];
+  const row = document.getElementById('dictrow-' + i);
+  // インライン編集に切り替え
+  row.innerHTML = `
+    <td colspan="2">
+      <div style="display:flex; gap:8px; align-items:center;">
+        <input type="text" id="edit-orig-${i}" value="${esc(item.original)}"
+          style="flex:1; margin-bottom:0; font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--warn);"
+          onkeydown="if(event.key==='Enter' && !event.isComposing) saveItem(${i}); if(event.key==='Escape') renderDict();">
+        <span style="color:var(--text3)">→</span>
+        <input type="text" id="edit-rep-${i}" value="${esc(item.replacement)}"
+          style="flex:1; margin-bottom:0; font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--success);"
+          onkeydown="if(event.key==='Enter' && !event.isComposing) saveItem(${i}); if(event.key==='Escape') renderDict();">
+      </div>
+    </td>
+    <td style="color:var(--text3); font-size:11px;">${item.date || '-'}</td>
+    <td class="action-cell">
+      <button class="icon-btn" onclick="saveItem(${i})" title="保存" style="color:var(--success); font-size:13px;">✓</button>
+      <button class="icon-btn" onclick="renderDict()" title="キャンセル">✕</button>
+    </td>`;
+  document.getElementById('edit-rep-' + i).focus();
+};
+
+window.saveItem = function(i) {
+  const newOrig   = document.getElementById('edit-orig-' + i).value.trim();
+  const newRep    = document.getElementById('edit-rep-' + i).value.trim();
+  if (!newOrig || !newRep) { showToast('空欄にはできません', 'error'); return; }
+
+  const oldOrig   = dict[i].original;
+  const oldRep    = dict[i].replacement;
+  const finalRep  = wrapBrackets(newRep);
+
+  // 置換後語句の重複チェック（自分自身は除外）
+  const repConflict = dict.findIndex((d, idx) => d.replacement === finalRep && idx !== i);
+  if (repConflict >= 0) {
+    alert(`「${finalRep}」はすでに別の語句の置換後として登録されています。\n別の表現を入力してください。`);
+    return;
+  }
+
+  const ok = upsertDict(newOrig, finalRep, i);
+  if (!ok) return;
+  renderDict();
+
+  // 出力ウィンドウに反映：旧置換語→新置換語
+  const output = document.getElementById('outputText');
+  if (output.value) {
+    // 旧置換語を新置換語に差し替え
+    output.value = output.value.split(oldRep).join(finalRep);
+    // 元語が変わった場合は入力側から再適用（元テキストに旧原語が残っている可能性）
+    if (newOrig !== oldOrig) {
+      output.value = output.value.split(newOrig).join(finalRep);
+    }
+  }
+
+  showToast('更新しました・出力に反映済み', 'success');
+};
+
+window.removeItem = function(i) {
+  if (!confirm(`「${dict[i].original}」を削除しますか？`)) return;
+  dict.splice(i, 1);
+  saveDict(dict);
+  updateDictLabel();
+  renderDict();
+  showToast('削除しました', 'success');
+};
+
+// 辞書追加
+document.getElementById('btnAddDict').addEventListener('click', addDictEntry);
+document.getElementById('dictReplacement').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing) addDictEntry(); });
+
+function addDictEntry() {
+  const original    = document.getElementById('dictOriginal').value.trim();
+  const replacement = document.getElementById('dictReplacement').value.trim();
+  if (!original || !replacement) {
+    showToast('元の語句と置換後の両方を入力してください', 'error');
+    return;
+  }
+  // 重複チェック：同じ元語がすでにあれば拒否
+  if (dict.some(d => d.original === original)) {
+    alert(`「${original}」はすでに置換リストに登録されています。\n別の語句を入力するか、既存の行を ✏️ で編集してください。`);
+    document.getElementById('dictOriginal').select();
+    return;
+  }
+  // 重複チェック：同じ置換後語句がすでにあれば拒否
+  const finalReplacement = wrapBrackets(replacement);
+  if (dict.some(d => d.replacement === finalReplacement)) {
+    alert(`「${finalReplacement}」はすでに別の語句の置換後として登録されています。\n別の表現を入力してください。`);
+    document.getElementById('dictReplacement').select();
+    return;
+  }
+  upsertDict(original, finalReplacement);
+  renderDict();
+  document.getElementById('dictOriginal').value = '';
+  document.getElementById('dictReplacement').value = '';
+  document.getElementById('dictOriginal').focus();
+  showToast('追加しました', 'success');
+}
+
+document.getElementById('btnClearAll').addEventListener('click', () => {
+  if (!confirm('置換リストの全データを削除しますか？')) return;
+  dict = [];
+  saveDict(dict);
+  updateDictLabel();
+  renderDict();
+  showToast('全データを削除しました', 'error');
+});
+
+// ============================================================
+// 暗号化エクスポート
+// ============================================================
+document.getElementById('btnExport').addEventListener('click', () => {
+  if (dict.length === 0) { showToast('置換リストが空です', 'error'); return; }
+  document.getElementById('exportPass1').value = '';
+  document.getElementById('exportPass2').value = '';
+  document.getElementById('exportErr').textContent = '';
+  document.getElementById('exportModal').classList.add('show');
+  setTimeout(() => document.getElementById('exportPass1').focus(), 100);
+});
+
+document.getElementById('exportCancel').addEventListener('click', () => {
+  document.getElementById('exportModal').classList.remove('show');
+});
+
+document.getElementById('exportConfirm').addEventListener('click', async () => {
+  const p1 = document.getElementById('exportPass1').value;
+  const p2 = document.getElementById('exportPass2').value;
+  if (!p1) { document.getElementById('exportErr').textContent = 'パスワードを入力してください'; return; }
+  if (p1 !== p2) { document.getElementById('exportErr').textContent = 'パスワードが一致しません'; return; }
+
+  try {
+    const encrypted = await encryptData(JSON.stringify(dict), p1);
+    const blob = new Blob([JSON.stringify(encrypted)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    const d = new Date();
+    a.download = `SR-${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    document.getElementById('exportModal').classList.remove('show');
+    showToast('エクスポートしました', 'success');
+  } catch(e) {
+    document.getElementById('exportErr').textContent = '暗号化に失敗しました: ' + e.message;
+  }
+});
+
+// Enterキー対応
+document.getElementById('exportPass2').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('exportConfirm').click();
+});
+
+// ============================================================
+// 暗号化インポート
+// ============================================================
+document.getElementById('btnImportTrigger').addEventListener('click', () => {
+  document.getElementById('importFile').click();
+});
+
+document.getElementById('importFile').addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    importFileData = ev.target.result;
+    document.getElementById('importPass').value = '';
+    document.getElementById('importErr').textContent = '';
+    document.getElementById('importModal').classList.add('show');
+    setTimeout(() => document.getElementById('importPass').focus(), 100);
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+});
+
+document.getElementById('importCancel').addEventListener('click', () => {
+  document.getElementById('importModal').classList.remove('show');
+  importFileData = null;
+});
+
+document.getElementById('importConfirm').addEventListener('click', async () => {
+  const pass = document.getElementById('importPass').value;
+  if (!pass) { document.getElementById('importErr').textContent = 'パスワードを入力してください'; return; }
+  if (!importFileData) return;
+
+  try {
+    const encrypted = JSON.parse(importFileData);
+    const plain = await decryptData(encrypted, pass);
+    const imported = JSON.parse(plain);
+
+    if (!Array.isArray(imported)) throw new Error('形式が正しくありません');
+
+    const merge = confirm(`${imported.length}件の置換リストデータを読み込みます。\n\n既存データと統合しますか？\n「OK」＝統合（重複は上書き）\n「キャンセル」＝既存データを全て置き換え`);
+
+    if (merge) {
+      imported.forEach(item => upsertDict(item.original, item.replacement));
+    } else {
+      dict = imported;
+      saveDict(dict);
+    }
+
+    updateDictLabel();
+    renderDict();
+    document.getElementById('importModal').classList.remove('show');
+    importFileData = null;
+    showToast(`${imported.length}件インポートしました`, 'success');
+  } catch(e) {
+    document.getElementById('importErr').textContent = 'パスワードが違うか、ファイルが壊れています';
+  }
+});
+
+document.getElementById('importPass').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('importConfirm').click();
+});
+
+// ============================================================
+// AES-256-GCM 暗号化 / 復号（Web Crypto API）
+// ============================================================
+async function encryptData(plaintext, password) {
+  const enc = new TextEncoder();
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const iv   = crypto.getRandomValues(new Uint8Array(12));
+
+  const keyMaterial = await crypto.subtle.importKey(
+    'raw', enc.encode(password), { name: 'PBKDF2' }, false, ['deriveKey']
+  );
+  const key = await crypto.subtle.deriveKey(
+    { name: 'PBKDF2', salt, iterations: 200000, hash: 'SHA-256' },
+    keyMaterial,
+    { name: 'AES-GCM', length: 256 },
+    false, ['encrypt']
+  );
+  const ciphertext = await crypto.subtle.encrypt(
+    { name: 'AES-GCM', iv },
+    key,
+    enc.encode(plaintext)
+  );
+  return {
+    v: 1,
+    salt: bufToB64(salt),
+    iv:   bufToB64(iv),
+    data: bufToB64(new Uint8Array(ciphertext))
+  };
+}
+
+async function decryptData(payload, password) {
+  const enc = new TextEncoder();
+  const salt      = b64ToBuf(payload.salt);
+  const iv        = b64ToBuf(payload.iv);
+  const ciphertext = b64ToBuf(payload.data);
+
+  const keyMaterial = await crypto.subtle.importKey(
+    'raw', enc.encode(password), { name: 'PBKDF2' }, false, ['deriveKey']
+  );
+  const key = await crypto.subtle.deriveKey(
+    { name: 'PBKDF2', salt, iterations: 200000, hash: 'SHA-256' },
+    keyMaterial,
+    { name: 'AES-GCM', length: 256 },
+    false, ['decrypt']
+  );
+  const plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, ciphertext);
+  return new TextDecoder().decode(plain);
+}
+
+function bufToB64(buf) {
+  return btoa(String.fromCharCode(...buf));
+}
+function b64ToBuf(b64) {
+  return new Uint8Array(atob(b64).split('').map(c => c.charCodeAt(0)));
+}
+
+// ============================================================
+// ユーティリティ
+// ============================================================
+function esc(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function setMsg(id, msg, type) {
+  const el = document.getElementById(id);
+  el.textContent = msg;
+  el.className = 'status-msg' + (type ? ' ' + type : '');
+}
+
+function showToast(msg, type) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast ' + (type || '');
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+function updateDictLabel() {
+  document.getElementById('dictSizeLabel').textContent = '置換リスト: ' + dict.length + '件';
+}
+
+let saveTimer;
+function flashAutoSave() {
+  const el = document.getElementById('autoSaveLabel');
+  el.textContent = '自動保存: ✓ 保存済み';
+  el.style.borderColor = 'var(--success)';
+  el.style.color = 'var(--success)';
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    el.textContent = '自動保存: 待機中';
+    el.style.borderColor = '';
+    el.style.color = '';
+  }, 2000);
+}
+
+// ============================================================
+// 入力テキスト検索
+// ============================================================
+(function() {
+  const searchBox  = document.getElementById('searchBox');
+  const hitLabel   = document.getElementById('searchHitLabel');
+  const btnPrev    = document.getElementById('btnSearchPrev');
+  const btnNext    = document.getElementById('btnSearchNext');
+  const ta         = document.getElementById('inputText');
+
+  let hits    = [];   // 各ヒットの開始インデックス
+  let current = -1;
+
+  function search() {
+    const q = searchBox.value;
+    hits = [];
+    current = -1;
+    hitLabel.textContent = '';
+    if (!q) { lockInput(false); return; }
+
+    const text = ta.value;
+    let pos = 0;
+    while ((pos = text.indexOf(q, pos)) !== -1) {
+      hits.push(pos);
+      pos += q.length;
+    }
+
+    if (hits.length === 0) {
+      hitLabel.textContent = '0件';
+      hitLabel.style.color = 'var(--danger)';
+      lockInput(false);
+    } else {
+      lockInput(true);
+      current = 0;
+      jump();
+    }
+  }
+
+  function jump() {
+    if (hits.length === 0) return;
+    const q   = searchBox.value;
+    const pos = hits[current];
+    ta.focus();
+    ta.setSelectionRange(pos, pos + q.length);
+
+    // 隠しdivでヒット行の実ピクセル位置を測定
+    const style = getComputedStyle(ta);
+    const mirror = document.createElement('div');
+    mirror.style.cssText = [
+      'position:absolute', 'visibility:hidden', 'overflow:auto',
+      'white-space:pre-wrap', 'word-wrap:break-word',
+      `width:${ta.clientWidth}px`,
+      `font:${style.font}`,
+      `font-size:${style.fontSize}`,
+      `font-family:${style.fontFamily}`,
+      `line-height:${style.lineHeight}`,
+      `padding:${style.padding}`,
+      `border:${style.border}`,
+      `box-sizing:${style.boxSizing}`,
+    ].join(';');
+    document.body.appendChild(mirror);
+
+    // ヒット直前までのテキストでdivの高さを測る
+    mirror.textContent = ta.value.substring(0, pos);
+    const spanBefore = document.createElement('span');
+    spanBefore.textContent = '|';
+    mirror.appendChild(spanBefore);
+    const topPx = spanBefore.offsetTop;
+    document.body.removeChild(mirror);
+
+    // ヒット行が中央に来るようスクロール
+    const lineH = parseInt(style.lineHeight) || 22;
+    ta.scrollTop = Math.max(0, topPx - ta.clientHeight / 2 + lineH);
+
+    hitLabel.textContent = `${current + 1} / ${hits.length}`;
+    hitLabel.style.color = 'var(--warn)';
+  }
+
+  const btnSearch      = document.getElementById('btnSearch');
+  const btnSearchClear = document.getElementById('btnSearchClear');
+
+  let isComposing = false;
+
+  searchBox.addEventListener('compositionstart', () => { isComposing = true; });
+  searchBox.addEventListener('compositionend',   () => { isComposing = false; });
+
+  searchBox.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.isComposing && !isComposing) {
+      if (hits.length === 0) {
+        search(); // 未検索なら検索実行
+      } else {
+        current = e.shiftKey
+          ? (current - 1 + hits.length) % hits.length
+          : (current + 1) % hits.length;
+        jump();
+      }
+    }
+    if (e.key === 'Escape') { clearSearch(); }
+  });
+
+  btnSearch.addEventListener('click', search);
+
+  btnSearchClear.addEventListener('click', clearSearch);
+
+  function lockInput(lock) {
+    if (lock) {
+      ta.setAttribute('readonly', true);
+      ta.style.opacity = '0.65';
+      ta.title = '検索中は編集できません。クリアしてください。';
+    } else {
+      ta.removeAttribute('readonly');
+      ta.style.opacity = '';
+      ta.title = '';
+    }
+  }
+
+  function clearSearch() {
+    searchBox.value = '';
+    hits = [];
+    current = -1;
+    hitLabel.textContent = '';
+    lockInput(false);
+  }
+
+  btnNext.addEventListener('click', () => {
+    if (hits.length === 0) return;
+    current = (current + 1) % hits.length;
+    jump();
+  });
+
+  btnPrev.addEventListener('click', () => {
+    if (hits.length === 0) return;
+    current = (current - 1 + hits.length) % hits.length;
+    jump();
+  });
+
+  // テキスト変更時に検索結果リセット
+  ta.addEventListener('input', () => { if (searchBox.value) search(); });
+})();
+
+// ============================================================
+// アプリ起動（File System Access API）
+// ============================================================
+async function initApp() {
+  const modal  = document.getElementById('filePickerModal');
+  const errEl  = document.getElementById('filePickerErr');
+  const btnResume = document.getElementById('btnResumeFile');
+  const btnOpen   = document.getElementById('btnOpenFile');
+  const btnNew    = document.getElementById('btnNewFile');
+
+  // IndexedDB から前回のハンドルを取得
+  let savedHandle = null;
+  try { savedHandle = await retrieveHandle(); } catch(e) {}
+
+  if (savedHandle) {
+    try {
+      const perm = await savedHandle.queryPermission({ mode: 'readwrite' });
+      btnResume.textContent = `🔄 前回のファイルを再開（${savedHandle.name}）`;
+      btnResume.style.display = '';
+      // granted なら即座に再開、それ以外はボタンを押してもらう
+      if (perm === 'granted') {
+        await openFileHandle(savedHandle, modal, errEl);
+        return;
+      }
+    } catch(e) {
+      savedHandle = null;
+      await dropHandle().catch(() => {});
+    }
+  }
+
+  // モーダルを表示
+  btnResume.addEventListener('click', async () => {
+    errEl.textContent = '';
+    try {
+      const perm = await savedHandle.requestPermission({ mode: 'readwrite' });
+      if (perm !== 'granted') { errEl.textContent = 'ファイルへのアクセスが許可されませんでした'; return; }
+      await openFileHandle(savedHandle, modal, errEl);
+    } catch(e) {
+      errEl.textContent = 'ファイルを開けませんでした。別のファイルを選択してください。';
+    }
+  });
+
+  btnOpen.addEventListener('click', async () => {
+    errEl.textContent = '';
+    try {
+      const [handle] = await window.showOpenFilePicker({
+        types: [{ description: 'JSON', accept: { 'application/json': ['.json'] } }],
+        multiple: false
+      });
+      await openFileHandle(handle, modal, errEl);
+    } catch(e) {
+      if (e.name !== 'AbortError') errEl.textContent = 'ファイルを開けませんでした';
+    }
+  });
+
+  btnNew.addEventListener('click', async () => {
+    errEl.textContent = '';
+    try {
+      const handle = await window.showSaveFilePicker({
+        suggestedName: 'saferedact-dict.json',
+        types: [{ description: 'JSON', accept: { 'application/json': ['.json'] } }]
+      });
+      const writable = await handle.createWritable();
+      await writable.write('[]');
+      await writable.close();
+      await openFileHandle(handle, modal, errEl);
+    } catch(e) {
+      if (e.name !== 'AbortError') errEl.textContent = 'ファイルを作成できませんでした';
+    }
+  });
+}
+
+async function openFileHandle(handle, modal, errEl) {
+  try {
+    const file = await handle.getFile();
+    const text = await file.text();
+    dict = JSON.parse(text) || [];
+    dictFileHandle = handle;
+    await persistHandle(handle);
+    setFileNameLabel(handle.name);
+    modal.classList.remove('show');
+    updateDictLabel();
+    renderDict();
+  } catch(e) {
+    if (errEl) errEl.textContent = 'ファイルの読み込みに失敗しました';
+    await dropHandle().catch(() => {});
+  }
+}
+
+// 初期化
+initApp();
+
+// ============================================================
+// スクロール同期（入力 ↔ 出力）
+// ============================================================
+(function() {
+  const input  = document.getElementById('inputText');
+  const output = document.getElementById('outputText');
+  let lock = false;
+
+  input.addEventListener('scroll', () => {
+    if (lock) return;
+    lock = true;
+    output.scrollTop = input.scrollTop;
+    lock = false;
+  }, { passive: true });
+
+  output.addEventListener('scroll', () => {
+    if (lock) return;
+    lock = true;
+    input.scrollTop = output.scrollTop;
+    lock = false;
+  }, { passive: true });
+})();
+
+// 復元タブのスクロール同期
+(function() {
+  const ri = document.getElementById('restoreInput');
+  const ro = document.getElementById('restoreOutput');
+  let lock = false;
+
+  ri.addEventListener('scroll', () => {
+    if (lock) return;
+    lock = true;
+    ro.scrollTop = ri.scrollTop;
+    lock = false;
+  }, { passive: true });
+
+  ro.addEventListener('scroll', () => {
+    if (lock) return;
+    lock = true;
+    ri.scrollTop = ro.scrollTop;
+    lock = false;
+  }, { passive: true });
+})();
+</script>
 </body>
 </html>
