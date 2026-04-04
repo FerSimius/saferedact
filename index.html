@@ -694,14 +694,31 @@
 <!-- ===== ファイル選択モーダル（起動時） ===== -->
 <div class="modal-overlay show" id="filePickerModal">
   <div class="modal">
-    <h2>📂 置換リストファイルの選択</h2>
-    <p>置換リストを保存するJSONファイルを選択するか、新規作成してください。</p>
-    <div class="modal-actions" style="flex-direction:column; gap:10px; margin-top:8px;">
-      <button class="btn btn-primary" id="btnResumeFile" style="display:none; width:100%;"></button>
-      <button class="btn btn-secondary" id="btnOpenFile" style="width:100%;">📂 既存ファイルを開く</button>
-      <button class="btn btn-secondary" id="btnNewFile" style="width:100%;">✨ 新規作成</button>
+    <!-- Step 1: ファイル選択 -->
+    <div id="filePickerStep1">
+      <h2>📂 置換リストファイルの選択</h2>
+      <p>置換リストを保存するJSONファイルを選択するか、新規作成してください。</p>
+      <div class="modal-actions" style="flex-direction:column; gap:10px; margin-top:8px;">
+        <button class="btn btn-primary" id="btnResumeFile" style="display:none; width:100%;"></button>
+        <button class="btn btn-secondary" id="btnOpenFile" style="width:100%;">📂 既存ファイルを開く</button>
+        <button class="btn btn-secondary" id="btnNewFile" style="width:100%;">✨ 新規作成</button>
+      </div>
+      <div class="modal-err" id="filePickerErr" style="margin-top:8px;"></div>
     </div>
-    <div class="modal-err" id="filePickerErr" style="margin-top:8px;"></div>
+    <!-- Step 2: パスワード入力 -->
+    <div id="filePickerStep2" style="display:none;">
+      <h2 id="passStepTitle">🔐 パスワード</h2>
+      <p id="passStepDesc"></p>
+      <label>パスワード</label>
+      <input type="password" id="filePass1" placeholder="パスワードを入力" style="margin-bottom:10px;">
+      <label id="filePass2Label" style="display:none;">パスワード（確認）</label>
+      <input type="password" id="filePass2" placeholder="もう一度入力" style="display:none; margin-bottom:10px;">
+      <div class="modal-err" id="passErr"></div>
+      <div class="modal-actions" style="margin-top:8px;">
+        <button class="btn btn-secondary" id="btnPassBack">← 戻る</button>
+        <button class="btn btn-primary" id="btnPassConfirm">開く</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -756,14 +773,16 @@ async function dropHandle() {
 
 let dict           = [];
 let dictFileHandle = null;
+let dictPassword   = null;
 let importFileData = null; // インポート待ちのファイルデータ
 
 async function saveDict(d) {
   dict = d;
-  if (!dictFileHandle) return;
+  if (!dictFileHandle || !dictPassword) return;
   try {
-    const writable = await dictFileHandle.createWritable();
-    await writable.write(JSON.stringify(d, null, 2));
+    const encrypted = await encryptData(JSON.stringify(d), dictPassword);
+    const writable  = await dictFileHandle.createWritable();
+    await writable.write(JSON.stringify(encrypted));
     await writable.close();
     flashAutoSave();
   } catch(e) {
@@ -1492,8 +1511,10 @@ function flashAutoSave() {
 // アプリ起動（File System Access API）
 // ============================================================
 async function initApp() {
-  const modal  = document.getElementById('filePickerModal');
-  const errEl  = document.getElementById('filePickerErr');
+  const modal     = document.getElementById('filePickerModal');
+  const step1     = document.getElementById('filePickerStep1');
+  const step2     = document.getElementById('filePickerStep2');
+  const errEl     = document.getElementById('filePickerErr');
   const btnResume = document.getElementById('btnResumeFile');
   const btnOpen   = document.getElementById('btnOpenFile');
   const btnNew    = document.getElementById('btnNewFile');
@@ -1502,13 +1523,12 @@ async function initApp() {
   let savedHandle = null;
   try { savedHandle = await retrieveHandle(); } catch(e) {}
 
-  // localStorageから前回のファイル名を取得（フォールバック）
   const lastFileName = localStorage.getItem('lastFileName');
 
   // ボタンラベル設定
   if (savedHandle) {
     try {
-      const perm = await savedHandle.queryPermission({ mode: 'readwrite' });
+      await savedHandle.queryPermission({ mode: 'readwrite' });
       btnResume.textContent = `🔄 前回のファイルを再開（${savedHandle.name}）`;
       btnResume.style.display = '';
     } catch(e) {
@@ -1520,13 +1540,53 @@ async function initApp() {
     btnOpen.textContent = `📂 前回のファイルを開く（${lastFileName}）`;
   }
 
-  // イベントリスナーを先に全て設定（自動起動より前に必ず設定する）
+  // ファイル取得後にパスワードステップへ移行
+  function goToPasswordStep(handle, isNew) {
+    step1.style.display = 'none';
+    step2.style.display = '';
+    document.getElementById('passStepTitle').textContent = isNew ? '🔐 パスワードを設定' : '🔐 パスワードを入力';
+    document.getElementById('passStepDesc').textContent  = isNew
+      ? 'このファイルの暗号化パスワードを設定してください。忘れると復元できません。'
+      : 'ファイルを復号するパスワードを入力してください。';
+    document.getElementById('filePass2Label').style.display = isNew ? '' : 'none';
+    document.getElementById('filePass2').style.display      = isNew ? '' : 'none';
+    document.getElementById('btnPassConfirm').textContent   = isNew ? '作成' : '開く';
+    document.getElementById('filePass1').value = '';
+    document.getElementById('filePass2').value = '';
+    document.getElementById('passErr').textContent = '';
+    setTimeout(() => document.getElementById('filePass1').focus(), 100);
+
+    document.getElementById('btnPassBack').onclick = () => {
+      step2.style.display = 'none';
+      step1.style.display = '';
+    };
+
+    document.getElementById('btnPassConfirm').onclick = async () => {
+      const p1 = document.getElementById('filePass1').value;
+      const p2 = document.getElementById('filePass2').value;
+      if (!p1) { document.getElementById('passErr').textContent = 'パスワードを入力してください'; return; }
+      if (isNew && p1 !== p2) { document.getElementById('passErr').textContent = 'パスワードが一致しません'; return; }
+      await openFileHandle(handle, p1, isNew, modal);
+    };
+
+    document.getElementById('filePass1').onkeydown = e => {
+      if (e.key === 'Enter') {
+        if (isNew) document.getElementById('filePass2').focus();
+        else document.getElementById('btnPassConfirm').click();
+      }
+    };
+    document.getElementById('filePass2').onkeydown = e => {
+      if (e.key === 'Enter') document.getElementById('btnPassConfirm').click();
+    };
+  }
+
+  // ボタンイベント（先に登録）
   btnResume.addEventListener('click', async () => {
     errEl.textContent = '';
     try {
       const perm = await savedHandle.requestPermission({ mode: 'readwrite' });
       if (perm !== 'granted') { errEl.textContent = 'ファイルへのアクセスが許可されませんでした'; return; }
-      await openFileHandle(savedHandle, modal, errEl);
+      goToPasswordStep(savedHandle, false);
     } catch(e) {
       errEl.textContent = 'ファイルを開けませんでした。別のファイルを選択してください。';
     }
@@ -1539,7 +1599,7 @@ async function initApp() {
         types: [{ description: 'JSON', accept: { 'application/json': ['.json'] } }],
         multiple: false
       });
-      await openFileHandle(handle, modal, errEl);
+      goToPasswordStep(handle, false);
     } catch(e) {
       if (e.name !== 'AbortError') errEl.textContent = 'ファイルを開けませんでした';
     }
@@ -1552,42 +1612,60 @@ async function initApp() {
         suggestedName: 'saferedact-dict.json',
         types: [{ description: 'JSON', accept: { 'application/json': ['.json'] } }]
       });
-      const writable = await handle.createWritable();
-      await writable.write('[]');
-      await writable.close();
-      await openFileHandle(handle, modal, errEl);
+      goToPasswordStep(handle, true);
     } catch(e) {
       if (e.name !== 'AbortError') errEl.textContent = 'ファイルを作成できませんでした';
     }
   });
 
-  // 権限がすでに granted なら自動起動（イベントリスナー設定後に実行）
+  // 権限がすでに granted なら自動でパスワードステップへ
   if (savedHandle) {
     try {
       const perm = await savedHandle.queryPermission({ mode: 'readwrite' });
-      if (perm === 'granted') {
-        await openFileHandle(savedHandle, modal, errEl);
-      }
+      if (perm === 'granted') goToPasswordStep(savedHandle, false);
     } catch(e) {}
   }
 }
 
-async function openFileHandle(handle, modal, errEl) {
+async function openFileHandle(handle, password, isNew, modal) {
+  const errEl = document.getElementById('passErr');
   try {
-    const file = await handle.getFile();
-    const text = await file.text();
-    dict = JSON.parse(text) || [];
+    let loaded = [];
+    if (!isNew) {
+      const file = await handle.getFile();
+      const text = (await file.text()).trim();
+      if (text && text !== '[]') {
+        const parsed = JSON.parse(text);
+        if (Array.isArray(parsed)) {
+          // 平文JSON（旧形式）：そのまま読み込む
+          loaded = parsed;
+        } else {
+          // 暗号化済み：復号する
+          try {
+            loaded = JSON.parse(await decryptData(parsed, password));
+          } catch(e) {
+            errEl.textContent = 'パスワードが違うか、ファイルが壊れています';
+            return;
+          }
+        }
+      }
+    }
+    dict         = loaded;
+    dictPassword = password;
     dictFileHandle = handle;
-    // ハンドルをIndexedDBに保存（失敗しても続行）
+    // 新規 or 平文旧形式 → 暗号化して上書き保存
+    const encrypted = await encryptData(JSON.stringify(loaded), password);
+    const writable  = await handle.createWritable();
+    await writable.write(JSON.stringify(encrypted));
+    await writable.close();
     try { await persistHandle(handle); } catch(e) {}
-    // ファイル名をlocalStorageにも保存（フォールバック用）
     localStorage.setItem('lastFileName', handle.name);
     setFileNameLabel(handle.name);
     modal.classList.remove('show');
     updateDictLabel();
     renderDict();
   } catch(e) {
-    if (errEl) errEl.textContent = 'ファイルの読み込みに失敗しました';
+    errEl.textContent = 'ファイルの読み込みに失敗しました';
     await dropHandle().catch(() => {});
   }
 }
