@@ -532,7 +532,7 @@
       </div>
       <div class="panels-row">
         <div class="panel">
-          <div class="panel-title">① 入力テキスト</div>
+          <div class="panel-title">① 入力テキスト <span class="count" id="charCount1">0文字</span></div>
           <textarea id="inputText" placeholder="テキストをここに貼り付けてください。テキストを選択すると、上のアクションバーで置換語を設定できます。"></textarea>
           <div class="output-actions">
             <button class="btn btn-success" id="btnRunAll" style="width:100%">置換リスト全適用</button>
@@ -540,7 +540,7 @@
           <div class="status-msg" id="runMsg"></div>
         </div>
         <div class="panel">
-          <div class="panel-title">② マスキング済みテキスト <span class="count" id="replaceCount">0件置換</span></div>
+          <div class="panel-title">② マスキング済みテキスト <span class="count" id="replaceCount">0件置換</span> <span class="count" id="charCount2">0文字</span></div>
           <textarea id="outputText" placeholder="マスキング後のテキストがここに表示されます。&#10;AI等に渡して整えた後、下段の復元エリアに送ってください。" style="cursor:text;" onkeydown="if(!((event.ctrlKey||event.metaKey)&&event.key==='c')) return false;" ondragstart="return false;"></textarea>
           <div class="output-actions">
             <button class="btn btn-secondary" id="btnCopy">コピー</button>
@@ -563,7 +563,7 @@
       </div>
       <div class="panels-row">
         <div class="panel">
-          <div class="panel-title">③ AI整形後テキスト（マスキング済み）</div>
+          <div class="panel-title">③ AI整形後テキスト（マスキング済み） <span class="count" id="charCount3">0文字</span></div>
           <textarea id="restoreInput" placeholder="AIが整形したテキストをここに貼り付けてください。&#10;[利用者S] などの置換語が含まれたままでOKです。"></textarea>
           <div class="output-actions">
             <button class="btn btn-restore" id="btnRestore" style="width:100%">復元実行</button>
@@ -571,7 +571,7 @@
           <div class="status-msg" id="restoreMsg"></div>
         </div>
         <div class="panel">
-          <div class="panel-title">④ 復元済みテキスト <span class="count" id="restoreCount">0件復元</span></div>
+          <div class="panel-title">④ 復元済みテキスト <span class="count" id="restoreCount">0件復元</span> <span class="count" id="charCount4">0文字</span></div>
           <textarea id="restoreOutput" placeholder="復元後のテキストがここに表示されます。" style="cursor:text;" onkeydown="if(!((event.ctrlKey||event.metaKey)&&event.key==='c')) return false;" ondragstart="return false;"></textarea>
           <div class="output-actions">
             <button class="btn btn-secondary" id="btnRestoreCopy">コピー</button>
@@ -921,6 +921,7 @@ document.getElementById('btnRunAll').addEventListener('click', () => {
 
   document.getElementById('outputText').value = result;
   document.getElementById('replaceCount').textContent = count + '件置換';
+  updateCharCount('outputText', 'charCount2');
   setMsg('runMsg', `✓ ${count}件の語句を置換しました`, 'ok');
   showToast(`${count}件置換完了`, 'success');
 });
@@ -944,6 +945,7 @@ document.getElementById('btnRestore').addEventListener('click', () => {
 
   document.getElementById('restoreOutput').value = result;
   document.getElementById('restoreCount').textContent = count + '件復元';
+  updateCharCount('restoreOutput', 'charCount4');
   setMsg('restoreMsg', `✓ ${count}件の語句を復元しました`, 'ok');
   showToast(`${count}件復元完了`, 'restore');
 });
@@ -970,7 +972,20 @@ document.getElementById('btnClearOutput').addEventListener('click', () => {
   document.getElementById('restoreOutput').value = '';
   document.getElementById('restoreCount').textContent = '0件復元';
   setMsg('restoreMsg', '', '');
+  ['charCount1','charCount2','charCount3','charCount4'].forEach(id => {
+    document.getElementById(id).textContent = '0文字';
+  });
 });
+
+function updateCharCount(taId, spanId) {
+  const len = document.getElementById(taId).value.length;
+  document.getElementById(spanId).textContent = len.toLocaleString() + '文字';
+}
+
+document.getElementById('inputText').addEventListener('input', () => updateCharCount('inputText', 'charCount1'));
+document.getElementById('outputText').addEventListener('input', () => updateCharCount('outputText', 'charCount2'));
+document.getElementById('restoreInput').addEventListener('input', () => updateCharCount('restoreInput', 'charCount3'));
+document.getElementById('restoreOutput').addEventListener('input', () => updateCharCount('restoreOutput', 'charCount4'));
 
 function copyText(text, msg) {
   if (!text) return;
