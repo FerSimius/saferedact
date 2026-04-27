@@ -922,7 +922,6 @@ document.getElementById('btnRunAll').addEventListener('click', () => {
   document.getElementById('outputText').value = result;
   document.getElementById('replaceCount').textContent = count + '件置換';
   updateCharCount('outputText', 'charCount2');
-  setMsg('runMsg', `✓ ${count}件の語句を置換しました`, 'ok');
   showToast(`${count}件置換完了`, 'success');
 });
 
@@ -946,7 +945,6 @@ document.getElementById('btnRestore').addEventListener('click', () => {
   document.getElementById('restoreOutput').value = result;
   document.getElementById('restoreCount').textContent = count + '件復元';
   updateCharCount('restoreOutput', 'charCount4');
-  setMsg('restoreMsg', `✓ ${count}件の語句を復元しました`, 'ok');
   showToast(`${count}件復元完了`, 'restore');
 });
 
