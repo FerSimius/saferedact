@@ -142,7 +142,7 @@
   .register-row h3 { white-space: nowrap; margin-bottom: 0; }
   .register-row .selection-preview { flex: 1; margin-bottom: 0; }
   .register-row input[type="text"] { flex: 1; margin-bottom: 0; }
-  .register-row .btn { width: auto; flex-shrink: 0; }
+
 
   .panels-row {
     display: flex;
@@ -265,7 +265,7 @@
   .btn-danger-outline { background: transparent; border: 1px solid var(--border); color: var(--text2); }
   .btn-danger-outline:hover { background: var(--border); color: #ffffff; }
 
-  .btn:disabled { opacity: 0.4; cursor: not-allowed; filter: none !important; }
+  .btn:disabled { opacity: 0.35; cursor: not-allowed; filter: none !important; }
 
   .selection-preview {
     background: var(--bg3);
@@ -522,9 +522,11 @@
               <span style="color:var(--text3)">テキストを選択してください</span>
             </div>
             <input type="text" id="replaceWith" placeholder="置換後の表現（例: [利用者S]）">
-            <button class="btn btn-primary" id="btnRegisterAndApply" disabled>登録して置換</button>
           </div>
           <div class="status-msg" id="registerMsg"></div>
+        </div>
+        <div class="action-section">
+          <button class="btn btn-primary" id="btnRegisterAndApply" disabled>登録して置換</button>
         </div>
         <div class="action-section">
           <button class="btn btn-secondary" id="btnClearOutput">全クリア</button>
