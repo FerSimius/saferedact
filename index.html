@@ -583,9 +583,6 @@
           <button class="btn btn-restore" id="btnRestore">🔁 復元実行</button>
           <div class="status-msg" id="restoreMsg"></div>
         </div>
-        <div class="action-section">
-          <button class="btn btn-secondary" id="btnClearRestoreOutput">全クリア</button>
-        </div>
       </div>
       <div class="panels-row">
         <div class="panel">
@@ -1001,9 +998,6 @@ document.getElementById('btnClearOutput').addEventListener('click', () => {
   document.getElementById('outputText').value = '';
   document.getElementById('replaceCount').textContent = '0件置換';
   setMsg('runMsg', '', '');
-});
-
-document.getElementById('btnClearRestoreOutput').addEventListener('click', () => {
   document.getElementById('restoreInput').value = '';
   document.getElementById('restoreOutput').value = '';
   document.getElementById('restoreCount').textContent = '0件復元';
