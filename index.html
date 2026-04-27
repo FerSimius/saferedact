@@ -527,10 +527,6 @@
           <div class="status-msg" id="registerMsg"></div>
         </div>
         <div class="action-section">
-          <button class="btn btn-success" id="btnRunAll">▶ 置換リスト全適用</button>
-          <div class="status-msg" id="runMsg"></div>
-        </div>
-        <div class="action-section">
           <button class="btn btn-secondary" id="btnClearOutput">全クリア</button>
         </div>
       </div>
@@ -538,6 +534,10 @@
         <div class="panel">
           <div class="panel-title">① 入力テキスト</div>
           <textarea id="inputText" placeholder="テキストをここに貼り付けてください。テキストを選択すると、上のアクションバーで置換語を設定できます。"></textarea>
+          <div class="output-actions">
+            <button class="btn btn-success" id="btnRunAll">▶ 置換リスト全適用</button>
+            <div class="status-msg" id="runMsg"></div>
+          </div>
         </div>
         <div class="panel">
           <div class="panel-title">② マスキング済みテキスト <span class="count" id="replaceCount">0件置換</span></div>
@@ -545,7 +545,6 @@
           <div class="output-actions">
             <button class="btn btn-secondary" id="btnCopy">📋 コピー</button>
             <button class="btn btn-secondary" id="btnSendToInput">← 入力に戻す</button>
-            <button class="btn btn-primary" id="btnSendToRestore">↓ 復元へ</button>
           </div>
         </div>
       </div>
@@ -562,15 +561,15 @@
             </div>
           </div>
         </div>
-        <div class="action-section">
-          <button class="btn btn-restore" id="btnRestore">🔁 復元実行</button>
-          <div class="status-msg" id="restoreMsg"></div>
-        </div>
       </div>
       <div class="panels-row">
         <div class="panel">
           <div class="panel-title">③ AI整形後テキスト（マスキング済み）</div>
           <textarea id="restoreInput" placeholder="AIが整形したテキストをここに貼り付けてください。&#10;[利用者S] などの置換語が含まれたままでOKです。"></textarea>
+          <div class="output-actions">
+            <button class="btn btn-restore" id="btnRestore">🔁 復元実行</button>
+            <div class="status-msg" id="restoreMsg"></div>
+          </div>
         </div>
         <div class="panel">
           <div class="panel-title">④ 復元済みテキスト <span class="count" id="restoreCount">0件復元</span></div>
@@ -968,13 +967,6 @@ document.getElementById('btnSendToInput').addEventListener('click', () => {
   showToast('入力欄に移動しました', 'success');
 });
 
-document.getElementById('btnSendToRestore').addEventListener('click', () => {
-  const v = document.getElementById('outputText').value;
-  if (!v) return;
-  document.getElementById('restoreInput').value = v;
-  document.getElementById('restoreInput').scrollIntoView({ behavior: 'smooth', block: 'start' });
-  showToast('復元エリアに送りました', 'success');
-});
 
 document.getElementById('btnClearOutput').addEventListener('click', () => {
   document.getElementById('inputText').value = '';
