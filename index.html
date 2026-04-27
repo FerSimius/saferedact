@@ -537,7 +537,6 @@
           <div class="output-actions">
             <button class="btn btn-success" id="btnRunAll" style="width:100%">置換リスト全適用</button>
           </div>
-          <div class="status-msg" id="runMsg"></div>
         </div>
         <div class="panel">
           <div class="panel-title">② マスキング済みテキスト <span class="count" id="replaceCount">0件置換</span> <span class="count" id="charCount2">0文字</span></div>
@@ -568,7 +567,6 @@
           <div class="output-actions">
             <button class="btn btn-restore" id="btnRestore" style="width:100%">復元実行</button>
           </div>
-          <div class="status-msg" id="restoreMsg"></div>
         </div>
         <div class="panel">
           <div class="panel-title">④ 復元済みテキスト <span class="count" id="restoreCount">0件復元</span> <span class="count" id="charCount4">0文字</span></div>
@@ -906,9 +904,9 @@ function upsertDict(original, replacement, overwriteIndex = -1) {
 // 一括実行
 // ============================================================
 document.getElementById('btnRunAll').addEventListener('click', () => {
-  if (dict.length === 0) { setMsg('runMsg', '置換リストが空です', 'err'); return; }
+  if (dict.length === 0) { showToast('置換リストが空です', 'error'); return; }
   const input = document.getElementById('inputText').value;
-  if (!input.trim()) { setMsg('runMsg', '入力テキストが空です', 'err'); return; }
+  if (!input.trim()) { showToast('入力テキストが空です', 'error'); return; }
 
   let result = input;
   let count = 0;
@@ -929,9 +927,9 @@ document.getElementById('btnRunAll').addEventListener('click', () => {
 // 復元（逆引き）
 // ============================================================
 document.getElementById('btnRestore').addEventListener('click', () => {
-  if (dict.length === 0) { setMsg('restoreMsg', '置換リストが空です', 'err'); return; }
+  if (dict.length === 0) { showToast('置換リストが空です', 'error'); return; }
   const input = document.getElementById('restoreInput').value;
-  if (!input.trim()) { setMsg('restoreMsg', 'テキストが空です', 'err'); return; }
+  if (!input.trim()) { showToast('テキストが空です', 'error'); return; }
 
   let result = input;
   let count = 0;
@@ -965,11 +963,9 @@ document.getElementById('btnClearOutput').addEventListener('click', () => {
   document.getElementById('inputText').value = '';
   document.getElementById('outputText').value = '';
   document.getElementById('replaceCount').textContent = '0件置換';
-  setMsg('runMsg', '', '');
   document.getElementById('restoreInput').value = '';
   document.getElementById('restoreOutput').value = '';
   document.getElementById('restoreCount').textContent = '0件復元';
-  setMsg('restoreMsg', '', '');
   ['charCount1','charCount2','charCount3','charCount4'].forEach(id => {
     document.getElementById(id).textContent = '0文字';
   });
