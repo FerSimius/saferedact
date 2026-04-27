@@ -408,15 +408,6 @@
   .empty-state { text-align: center; padding: 48px; color: var(--text3); font-size: 13px; }
   .empty-state .icon { font-size: 32px; margin-bottom: 8px; }
 
-  .search-bar {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    margin-top: 8px;
-  }
-
-  .search-bar input { flex: 1; margin-bottom: 0; }
-
   .output-actions { display: flex; gap: 8px; margin-top: 10px; }
   .output-actions .btn { width: auto; flex: 1; }
 
@@ -547,14 +538,6 @@
         <div class="panel">
           <div class="panel-title">① 入力テキスト</div>
           <textarea id="inputText" placeholder="テキストをここに貼り付けてください。テキストを選択すると、上のアクションバーで置換語を設定できます。"></textarea>
-          <div class="search-bar">
-            <input type="text" id="searchBox" placeholder="🔍 検索ワードを入力…" autocomplete="off" style="margin-bottom:0; flex:1;">
-            <button class="icon-btn" id="btnSearch" title="検索" style="color:var(--accent); font-size:12px; padding:4px 10px;">検索</button>
-            <button class="icon-btn" id="btnSearchClear" title="クリア" style="color:var(--text3); font-size:12px; padding:4px 10px;">クリア</button>
-            <span id="searchHitLabel" style="font-size:11px; color:var(--text2); white-space:nowrap; font-family:'JetBrains Mono',monospace;"></span>
-            <button class="icon-btn" id="btnSearchPrev" title="前へ" style="color:var(--text2);">▲</button>
-            <button class="icon-btn" id="btnSearchNext" title="次へ" style="color:var(--text2);">▼</button>
-          </div>
         </div>
         <div class="panel">
           <div class="panel-title">② マスキング済みテキスト <span class="count" id="replaceCount">0件置換</span></div>
@@ -1367,145 +1350,6 @@ function flashAutoSave() {
   }, 2000);
 }
 
-// ============================================================
-// 入力テキスト検索
-// ============================================================
-(function() {
-  const searchBox  = document.getElementById('searchBox');
-  const hitLabel   = document.getElementById('searchHitLabel');
-  const btnPrev    = document.getElementById('btnSearchPrev');
-  const btnNext    = document.getElementById('btnSearchNext');
-  const ta         = document.getElementById('inputText');
-
-  let hits    = [];   // 各ヒットの開始インデックス
-  let current = -1;
-
-  function search() {
-    const q = searchBox.value;
-    hits = [];
-    current = -1;
-    hitLabel.textContent = '';
-    if (!q) { lockInput(false); return; }
-
-    const text = ta.value;
-    let pos = 0;
-    while ((pos = text.indexOf(q, pos)) !== -1) {
-      hits.push(pos);
-      pos += q.length;
-    }
-
-    if (hits.length === 0) {
-      hitLabel.textContent = '0件';
-      hitLabel.style.color = 'var(--danger)';
-      lockInput(false);
-    } else {
-      lockInput(true);
-      current = 0;
-      jump();
-    }
-  }
-
-  function jump() {
-    if (hits.length === 0) return;
-    const q   = searchBox.value;
-    const pos = hits[current];
-    ta.focus();
-    ta.setSelectionRange(pos, pos + q.length);
-
-    // 隠しdivでヒット行の実ピクセル位置を測定
-    const style = getComputedStyle(ta);
-    const mirror = document.createElement('div');
-    mirror.style.cssText = [
-      'position:absolute', 'visibility:hidden', 'overflow:auto',
-      'white-space:pre-wrap', 'word-wrap:break-word',
-      `width:${ta.clientWidth}px`,
-      `font:${style.font}`,
-      `font-size:${style.fontSize}`,
-      `font-family:${style.fontFamily}`,
-      `line-height:${style.lineHeight}`,
-      `padding:${style.padding}`,
-      `border:${style.border}`,
-      `box-sizing:${style.boxSizing}`,
-    ].join(';');
-    document.body.appendChild(mirror);
-
-    // ヒット直前までのテキストでdivの高さを測る
-    mirror.textContent = ta.value.substring(0, pos);
-    const spanBefore = document.createElement('span');
-    spanBefore.textContent = '|';
-    mirror.appendChild(spanBefore);
-    const topPx = spanBefore.offsetTop;
-    document.body.removeChild(mirror);
-
-    // ヒット行が中央に来るようスクロール
-    const lineH = parseInt(style.lineHeight) || 22;
-    ta.scrollTop = Math.max(0, topPx - ta.clientHeight / 2 + lineH);
-
-    hitLabel.textContent = `${current + 1} / ${hits.length}`;
-    hitLabel.style.color = 'var(--warn)';
-  }
-
-  const btnSearch      = document.getElementById('btnSearch');
-  const btnSearchClear = document.getElementById('btnSearchClear');
-
-  let isComposing = false;
-
-  searchBox.addEventListener('compositionstart', () => { isComposing = true; });
-  searchBox.addEventListener('compositionend',   () => { isComposing = false; });
-
-  searchBox.addEventListener('keydown', e => {
-    if (e.key === 'Enter' && !e.isComposing && !isComposing) {
-      if (hits.length === 0) {
-        search(); // 未検索なら検索実行
-      } else {
-        current = e.shiftKey
-          ? (current - 1 + hits.length) % hits.length
-          : (current + 1) % hits.length;
-        jump();
-      }
-    }
-    if (e.key === 'Escape') { clearSearch(); }
-  });
-
-  btnSearch.addEventListener('click', search);
-
-  btnSearchClear.addEventListener('click', clearSearch);
-
-  function lockInput(lock) {
-    if (lock) {
-      ta.setAttribute('readonly', true);
-      ta.style.opacity = '0.65';
-      ta.title = '検索中は編集できません。クリアしてください。';
-    } else {
-      ta.removeAttribute('readonly');
-      ta.style.opacity = '';
-      ta.title = '';
-    }
-  }
-
-  function clearSearch() {
-    searchBox.value = '';
-    hits = [];
-    current = -1;
-    hitLabel.textContent = '';
-    lockInput(false);
-  }
-
-  btnNext.addEventListener('click', () => {
-    if (hits.length === 0) return;
-    current = (current + 1) % hits.length;
-    jump();
-  });
-
-  btnPrev.addEventListener('click', () => {
-    if (hits.length === 0) return;
-    current = (current - 1 + hits.length) % hits.length;
-    jump();
-  });
-
-  // テキスト変更時に検索結果リセット
-  ta.addEventListener('input', () => { if (searchBox.value) search(); });
-})();
 
 // ============================================================
 // アプリ起動（File System Access API）
