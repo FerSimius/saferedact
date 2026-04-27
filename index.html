@@ -526,7 +526,7 @@
           <div class="status-msg" id="registerMsg"></div>
         </div>
         <div class="action-section">
-          <button class="btn btn-secondary" id="btnRegisterAndApply" disabled>登録して置換</button>
+          <button class="btn btn-secondary" id="btnRegisterAndApply">登録して置換</button>
         </div>
         <div class="action-section">
           <button class="btn btn-secondary" id="btnClearOutput">全クリア</button>
@@ -809,7 +809,6 @@ function handleSelection() {
 
   if (selectedText) {
     preview.innerHTML = '<span class="selected-text">' + esc(selectedText) + '</span>';
-    btn.disabled = false;
     const existing = dict.find(d => d.original === selectedText);
     if (existing) {
       document.getElementById('replaceWith').value = existing.replacement;
@@ -820,7 +819,6 @@ function handleSelection() {
     }
   } else {
     preview.innerHTML = '<span style="color:var(--text3)">テキストを選択してください</span>';
-    btn.disabled = true;
   }
 }
 
@@ -834,8 +832,8 @@ function wrapBrackets(s) {
 
 function doRegisterAndApply() {
   const raw = document.getElementById('replaceWith').value.trim();
-  if (!selectedText) return;
-  if (!raw) { setMsg('registerMsg', '置換後の表現を入力してください', 'err'); return; }
+  if (!selectedText) { showToast('テキストを選択してください', 'error'); return; }
+  if (!raw) { showToast('置換後の表現を入力してください', 'error'); return; }
 
   const replacement = wrapBrackets(raw);
 
@@ -865,7 +863,6 @@ function doRegisterAndApply() {
   setMsg('registerMsg', `✓ 「${selectedText}」→「${replacement}」登録・置換完了`, 'ok');
   document.getElementById('replaceWith').value = '';
   selectedText = '';
-  document.getElementById('btnRegisterAndApply').disabled = true;
   document.getElementById('selectionPreview').innerHTML = '<span style="color:var(--text3)">テキストを選択してください</span>';
   showToast('登録・置換完了', 'success');
 }
