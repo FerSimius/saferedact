@@ -517,7 +517,7 @@
       <div class="action-bar">
         <div class="action-section">
           <div class="register-row">
-            <h3>🖱 選択して置換登録</h3>
+            <h3>選択して置換登録</h3>
             <div class="selection-preview" id="selectionPreview">
               <span style="color:var(--text3)">テキストを選択してください</span>
             </div>
@@ -535,7 +535,7 @@
           <div class="panel-title">① 入力テキスト</div>
           <textarea id="inputText" placeholder="テキストをここに貼り付けてください。テキストを選択すると、上のアクションバーで置換語を設定できます。"></textarea>
           <div class="output-actions">
-            <button class="btn btn-success" id="btnRunAll" style="width:100%">▶ 置換リスト全適用</button>
+            <button class="btn btn-success" id="btnRunAll" style="width:100%">置換リスト全適用</button>
           </div>
           <div class="status-msg" id="runMsg"></div>
         </div>
@@ -543,7 +543,7 @@
           <div class="panel-title">② マスキング済みテキスト <span class="count" id="replaceCount">0件置換</span></div>
           <textarea id="outputText" placeholder="マスキング後のテキストがここに表示されます。&#10;AI等に渡して整えた後、下段の復元エリアに送ってください。" style="cursor:text;" onkeydown="if(!((event.ctrlKey||event.metaKey)&&event.key==='c')) return false;" ondragstart="return false;"></textarea>
           <div class="output-actions">
-            <button class="btn btn-secondary" id="btnCopy">📋 コピー</button>
+            <button class="btn btn-secondary" id="btnCopy">コピー</button>
           </div>
         </div>
       </div>
@@ -566,7 +566,7 @@
           <div class="panel-title">③ AI整形後テキスト（マスキング済み）</div>
           <textarea id="restoreInput" placeholder="AIが整形したテキストをここに貼り付けてください。&#10;[利用者S] などの置換語が含まれたままでOKです。"></textarea>
           <div class="output-actions">
-            <button class="btn btn-restore" id="btnRestore" style="width:100%">🔁 復元実行</button>
+            <button class="btn btn-restore" id="btnRestore" style="width:100%">復元実行</button>
           </div>
           <div class="status-msg" id="restoreMsg"></div>
         </div>
@@ -574,7 +574,7 @@
           <div class="panel-title">④ 復元済みテキスト <span class="count" id="restoreCount">0件復元</span></div>
           <textarea id="restoreOutput" placeholder="復元後のテキストがここに表示されます。" style="cursor:text;" onkeydown="if(!((event.ctrlKey||event.metaKey)&&event.key==='c')) return false;" ondragstart="return false;"></textarea>
           <div class="output-actions">
-            <button class="btn btn-secondary" id="btnRestoreCopy">📋 コピー</button>
+            <button class="btn btn-secondary" id="btnRestoreCopy">コピー</button>
           </div>
         </div>
       </div>
