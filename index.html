@@ -273,14 +273,14 @@
     border-radius: 6px;
     padding: 8px 10px;
     font-size: 13px;
-    color: var(--text2);
-    margin-bottom: 6px;
+    color: var(--text);
     font-family: 'JetBrains Mono', monospace;
-    word-break: break-all;
+    outline: none;
+    transition: border-color 0.15s;
+    margin-bottom: 0;
   }
 
 
-  .selected-text { color: var(--warn); font-weight: 600; }
 
   .status-msg {
     font-size: 11px;
@@ -518,9 +518,7 @@
         <div class="action-section">
           <div class="register-row">
             <h3>選択して置換登録</h3>
-            <div class="selection-preview" id="selectionPreview">
-              <span style="color:var(--text3)">テキストを選択してください</span>
-            </div>
+            <input type="text" class="selection-preview" id="selectionPreview" placeholder="テキストを選択 または 直接入力">
             <input type="text" id="replaceWith" placeholder="置換後の表現（例: [利用者S]）">
           </div>
           <div class="status-msg" id="registerMsg"></div>
@@ -808,7 +806,7 @@ function handleSelection() {
   const btn = document.getElementById('btnRegisterAndApply');
 
   if (selectedText) {
-    preview.innerHTML = '<span class="selected-text">' + esc(selectedText) + '</span>';
+    preview.value = selectedText;
     const existing = dict.find(d => d.original === selectedText);
     if (existing) {
       document.getElementById('replaceWith').value = existing.replacement;
@@ -817,8 +815,6 @@ function handleSelection() {
       document.getElementById('replaceWith').value = '';
       setMsg('registerMsg', '', '');
     }
-  } else {
-    preview.innerHTML = '<span style="color:var(--text3)">テキストを選択してください</span>';
   }
 }
 
@@ -831,8 +827,9 @@ function wrapBrackets(s) {
 }
 
 function doRegisterAndApply() {
+  selectedText = document.getElementById('selectionPreview').value.trim();
   const raw = document.getElementById('replaceWith').value.trim();
-  if (!selectedText) { showToast('テキストを選択してください', 'error'); return; }
+  if (!selectedText) { showToast('元の語句を入力してください', 'error'); return; }
   if (!raw) { showToast('置換後の表現を入力してください', 'error'); return; }
 
   const replacement = wrapBrackets(raw);
@@ -862,8 +859,8 @@ function doRegisterAndApply() {
 
   setMsg('registerMsg', `✓ 「${selectedText}」→「${replacement}」登録・置換完了`, 'ok');
   document.getElementById('replaceWith').value = '';
+  document.getElementById('selectionPreview').value = '';
   selectedText = '';
-  document.getElementById('selectionPreview').innerHTML = '<span style="color:var(--text3)">テキストを選択してください</span>';
   showToast('登録・置換完了', 'success');
 }
 
