@@ -496,9 +496,12 @@
     .panel { flex: none !important; min-height: auto !important; }
     textarea { flex: none !important; min-height: 160px !important; }
     .action-bar { flex-wrap: wrap; }
-    .workspace-section:first-child .action-bar { display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 8px 6px !important; }
-    .workspace-section:first-child .action-bar > .action-section:first-child { grid-column: 1 / -1 !important; flex: none !important; }
+    .workspace-section:first-child .action-bar { display: block !important; }
+    .workspace-section:first-child .action-bar::after { content: ''; display: block; clear: both; }
     .workspace-section:first-child .action-bar > .action-section { padding-left: 0 !important; padding-right: 0 !important; }
+    .workspace-section:first-child .action-bar > .action-section:first-child { width: 100% !important; clear: both !important; }
+    .workspace-section:first-child .action-bar > .action-section:nth-child(2) { float: left !important; width: calc(50% - 3px) !important; margin-right: 6px !important; }
+    .workspace-section:first-child .action-bar > .action-section:nth-child(3) { float: right !important; width: calc(50% - 3px) !important; }
     .register-row { flex-wrap: wrap; }
     .register-row h3 { width: 100%; }
   }
