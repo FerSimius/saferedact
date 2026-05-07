@@ -483,6 +483,21 @@
   .dict-meta { display: flex; align-items: center; justify-content: space-between; }
   .dict-count { font-size: 12px; color: var(--text2); display: flex; align-items: center; gap: 8px; }
   .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--success); display: inline-block; }
+
+  /* ======= レスポンシブ（550px以下：①②③④縦4段） ======= */
+  @media (max-width: 550px) {
+    html, body { overflow: auto; height: auto; }
+    body { height: auto; min-height: 100vh; }
+    .tab-content.active { overflow: visible; flex: none; }
+    .workspace-layout { overflow: visible; flex: none; }
+    .workspace-section { flex: none; min-height: auto; }
+    .panels-row { flex-direction: column; flex: none; min-height: auto; }
+    .panel { min-height: auto; flex: none; }
+    textarea { flex: none; min-height: 160px; }
+    .action-bar { flex-wrap: wrap; }
+    .register-row { flex-wrap: wrap; }
+    .register-row h3 { width: 100%; }
+  }
 </style>
 </head>
 <body>
