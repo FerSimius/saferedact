@@ -486,14 +486,15 @@
 
   /* ======= レスポンシブ（550px以下：①②③④縦4段） ======= */
   @media (max-width: 550px) {
-    html, body { overflow: auto; height: auto; }
-    body { height: auto; min-height: 100vh; }
-    .tab-content.active { overflow: visible; flex: none; }
-    .workspace-layout { overflow: visible; flex: none; }
-    .workspace-section { flex: none; min-height: auto; }
-    .panels-row { flex-direction: column; flex: none; min-height: auto; }
-    .panel { min-height: auto; flex: none; }
-    textarea { flex: none; min-height: 160px; }
+    html, body { overflow: auto !important; height: auto !important; }
+    body { min-height: 100vh; }
+    .tab-content.active { overflow: visible !important; flex: none !important; min-height: auto !important; }
+    .workspace-layout { overflow: visible !important; flex: none !important; min-height: auto !important; }
+    .workspace-section { flex: none !important; min-height: auto !important; }
+    .workspace-section:first-child { border-bottom: 1px solid var(--border); }
+    .panels-row { flex-direction: column !important; flex: none !important; min-height: auto !important; }
+    .panel { flex: none !important; min-height: auto !important; }
+    textarea { flex: none !important; min-height: 160px !important; }
     .action-bar { flex-wrap: wrap; }
     .register-row { flex-wrap: wrap; }
     .register-row h3 { width: 100%; }
