@@ -496,7 +496,8 @@
     .panel { flex: none !important; min-height: auto !important; }
     textarea { flex: none !important; min-height: 160px !important; }
     .action-bar { flex-wrap: wrap; }
-    .workspace-section:first-child .action-bar > .action-section:first-child { width: 100% !important; flex: none !important; }
+    .workspace-section:first-child .action-bar { display: grid !important; grid-template-columns: 1fr 1fr !important; }
+    .workspace-section:first-child .action-bar > .action-section:first-child { grid-column: 1 / -1 !important; flex: none !important; }
     .register-row { flex-wrap: wrap; }
     .register-row h3 { width: 100%; }
   }
