@@ -558,6 +558,7 @@
           <textarea id="inputText" placeholder="テキストをここに貼り付けてください。テキストを選択すると、上のアクションバーで置換語を設定できます。"></textarea>
           <div class="output-actions">
             <button class="btn btn-secondary" id="btnRunAll" style="width:100%">置換リスト全適用</button>
+            <button class="btn btn-secondary" id="btnRemoveBlankLines1">空白行削除</button>
           </div>
         </div>
         <div class="panel">
@@ -588,6 +589,7 @@
           <textarea id="restoreInput" placeholder="AIが整形したテキストをここに貼り付けてください。&#10;[利用者S] などの置換語が含まれたままでOKです。"></textarea>
           <div class="output-actions">
             <button class="btn btn-secondary" id="btnRestore" style="width:100%">復元実行</button>
+            <button class="btn btn-secondary" id="btnRemoveBlankLines3">空白行削除</button>
           </div>
         </div>
         <div class="panel">
@@ -968,6 +970,31 @@ document.getElementById('btnRestore').addEventListener('click', () => {
   document.getElementById('restoreCount').textContent = count + '件復元';
   updateCharCount('restoreOutput', 'charCount4');
   showToast(`${count}件復元完了`, 'restore');
+});
+
+// ============================================================
+// 空白行削除
+// ============================================================
+function removeBlankLines(text) {
+  return text.split('\n').filter(line => !/^[\s　]*$/.test(line)).join('\n');
+}
+
+document.getElementById('btnRemoveBlankLines1').addEventListener('click', () => {
+  const ta = document.getElementById('inputText');
+  const before = ta.value.split('\n').length;
+  ta.value = removeBlankLines(ta.value);
+  const removed = before - ta.value.split('\n').length;
+  updateCharCount('inputText', 'charCount1');
+  showToast(`空白行を${removed}行削除しました`, 'success');
+});
+
+document.getElementById('btnRemoveBlankLines3').addEventListener('click', () => {
+  const ta = document.getElementById('restoreInput');
+  const before = ta.value.split('\n').length;
+  ta.value = removeBlankLines(ta.value);
+  const removed = before - ta.value.split('\n').length;
+  updateCharCount('restoreInput', 'charCount3');
+  showToast(`空白行を${removed}行削除しました`, 'success');
 });
 
 // ============================================================
