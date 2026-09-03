@@ -928,12 +928,15 @@ document.getElementById('btnRunAll').addEventListener('click', () => {
 
   let result = input;
   let count = 0;
-  dict.forEach(({ original, replacement }) => {
-    if (result.includes(original)) {
-      count += result.split(original).length - 1;
-      result = result.split(original).join(replacement);
-    }
-  });
+  dict
+    .filter(({ original }) => original !== '')
+    .sort((a, b) => b.original.length - a.original.length)
+    .forEach(({ original, replacement }) => {
+      if (result.includes(original)) {
+        count += result.split(original).length - 1;
+        result = result.split(original).join(replacement);
+      }
+    });
 
   document.getElementById('outputText').value = result;
   document.getElementById('replaceCount').textContent = count + '件置換';
@@ -951,12 +954,15 @@ document.getElementById('btnRestore').addEventListener('click', () => {
 
   let result = input;
   let count = 0;
-  dict.forEach(({ original, replacement }) => {
-    if (result.includes(replacement)) {
-      count += result.split(replacement).length - 1;
-      result = result.split(replacement).join(original);
-    }
-  });
+  dict
+    .filter(({ original }) => original !== '')
+    .sort((a, b) => b.replacement.length - a.replacement.length)
+    .forEach(({ original, replacement }) => {
+      if (result.includes(replacement)) {
+        count += result.split(replacement).length - 1;
+        result = result.split(replacement).join(original);
+      }
+    });
 
   document.getElementById('restoreOutput').value = result;
   document.getElementById('restoreCount').textContent = count + '件復元';
